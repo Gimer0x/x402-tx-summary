@@ -1,19 +1,31 @@
 use axum::response::IntoResponse;
 use http::StatusCode;
 use axum::extract::Path;
-use crate::services::tx_fetcher::fetch_transaction;
+use crate::services::tx_fetcher::tx_fetcher;
+use dotenvy::var;
+use crate::services::tx_decoder::decoder;
 
 
-pub async fn my_handler() -> impl IntoResponse {
-    (StatusCode::OK, "This is VIP content!")
-}
+pub async fn fetcher(Path(tx_hash): Path<String>) -> impl IntoResponse {
 
-pub async fn decoder(Path(tx_hash): Path<String>) -> impl IntoResponse {
-    let rpc_url = "https://base-sepolia.g.alchemy.com/v2/JPE2IEwnw2a8MKk00jjNm".to_string();
-    let result = fetch_transaction(rpc_url.as_str(),tx_hash.as_str()).await;
+    let alchemy_api_key = var("ALCHEMY_API_KEY").unwrap();
+
+    let rpc_url = alchemy_api_key.to_string();
+    let result = tx_fetcher(rpc_url.as_str(),tx_hash.as_str()).await;
     match result {
-        Ok(Some(result)) => {
-            (StatusCode::OK, format!("This is the tx: {:?}", result))
+        Ok(Some(tx)) => {
+
+            let decoded = decoder(&tx).await;
+            match decoded {
+                Ok(decoded_tx) => (
+                    StatusCode::OK,
+                    format!("{:?}", decoded_tx),
+                ),
+                Err(e) => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Error decoding transaction: {}", e),
+                ),
+            }
         }
         Ok(None) => {
             (StatusCode::NOT_FOUND, "Transaction not found".to_string())
@@ -23,4 +35,3 @@ pub async fn decoder(Path(tx_hash): Path<String>) -> impl IntoResponse {
         }
     }
 }
-

@@ -1,5 +1,5 @@
 use alloy_primitives::{Address};
-use axum::{Router, routing::{get, post}};
+use axum::{Router, routing::{post}};
 use x402_axum::X402Middleware;
 use x402_chain_eip155::{KnownNetworkEip155, V1Eip155Exact};
 use x402_types::networks::USDC;
@@ -9,7 +9,7 @@ use dotenvy::var;
 mod controllers;
 mod services;
 
-use controllers::handlers::{my_handler, decoder};
+use controllers::handlers::{fetcher};
 
 #[tokio::main]
 async fn main() {
@@ -27,8 +27,7 @@ async fn main() {
         .expect("RECEIVER_ADDRESS must be a valid Ethereum address");
 
     let app: Router = Router::new()
-        .route("/explain",get(my_handler))
-        .route("/summary/{tx_hash}",post(decoder))
+        .route("/summary/{tx_hash}",post(fetcher))
         .layer(
             x402.with_price_tag(V1Eip155Exact::price_tag(
                 receiver_address,

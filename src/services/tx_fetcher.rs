@@ -1,17 +1,14 @@
 //! Fetch transaction by hash using Alloy (no ethers).
 
 use alloy::providers::{Provider, RootProvider};
+use alloy::rpc::types::Transaction;
 use alloy::transports::http::reqwest::Url;
 use alloy_primitives::B256;
 use std::str::FromStr;
-use alloy::rpc::types::Transaction;
 
 /// Fetches a transaction by hash from the given RPC URL.
 /// Returns `Ok(Some(tx))` if found, `Ok(None)` if not found, or an error on RPC/parse failure.
-pub async fn tx_fetcher(
-    rpc_url: &str,
-    tx_hash: &str,
-) -> Result<Option<Transaction>, FetchTxError> {
+pub async fn tx_fetcher(rpc_url: &str, tx_hash: &str) -> Result<Option<Transaction>, FetchTxError> {
     let url: Url = rpc_url
         .parse()
         .map_err(|e| FetchTxError::InvalidUrl(format!("{:?}", e)))?;

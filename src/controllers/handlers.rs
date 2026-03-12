@@ -1,21 +1,20 @@
-use axum::response::IntoResponse;
-use http::StatusCode;
-use axum::extract::Path;
+use crate::services::tx_decoder::tx_decoder;
 use crate::services::tx_fetcher::tx_fetcher;
-use dotenvy::var;
-use crate::services::tx_decoder::{decoder};
 use axum::Json;
-use serde_json::{json, Value};
+use axum::extract::Path;
+use axum::response::IntoResponse;
+use dotenvy::var;
+use http::StatusCode;
+use serde_json::{Value, json};
 
 pub async fn fetcher(Path(tx_hash): Path<String>) -> impl IntoResponse {
-
     let alchemy_api_key = var("ALCHEMY_API_KEY").unwrap();
 
     let rpc_url = alchemy_api_key.to_string();
     let result = tx_fetcher(rpc_url.as_str(), tx_hash.as_str()).await;
     match result {
         Ok(Some(tx)) => {
-            match decoder(&tx).await {
+            match tx_decoder(&tx).await {
                 Ok(decoded) => {
                     // Turn DecodedTx into serde_json::Value
                     let body: Value = serde_json::to_value(&decoded)
@@ -27,7 +26,7 @@ pub async fn fetcher(Path(tx_hash): Path<String>) -> impl IntoResponse {
                     (StatusCode::INTERNAL_SERVER_ERROR, Json(body))
                 }
             }
-        },
+        }
         Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "Transaction not found" })),

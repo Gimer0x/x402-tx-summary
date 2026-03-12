@@ -7,6 +7,8 @@ use tokio::net::TcpListener;
 use dotenvy::var;
 
 mod controllers;
+mod services;
+
 use controllers::handlers::{my_handler, decoder};
 
 #[tokio::main]

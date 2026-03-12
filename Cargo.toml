@@ -4,10 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+alloy = { version = "1.7", default-features = false, features = ["provider-http", "network", "reqwest", "reqwest-rustls-tls"] }
 alloy-primitives = "1.5.7"
 axum = "0.8.8"
+url = "2.5"
 dotenvy = "0.15.7"
 http = "1.4.0"
+thiserror = "2.0"
 tokio = { version = "1.50.0", features = ["full"] }
 x402-axum = "1.4.3"
 x402-chain-eip155 = { version = "1.4.3", features = ["server"] }

@@ -12,7 +12,7 @@ pub struct DecodedTx {
     block_number: u64,
     block_hash: String,
     transaction_index: u64,
-    effective_gas_price: U128,
+    effective_gas_price: String,
     data: DecodedTxData
 }
 
@@ -22,7 +22,7 @@ impl DecodedTx {
             block_number: u64, 
             block_hash: String, 
             transaction_index: u64, 
-            effective_gas_price: U128,
+            effective_gas_price: String,
             data: DecodedTxData
     ) -> Self {
         Self {
@@ -40,10 +40,10 @@ impl DecodedTx {
 pub struct DecodedTxData {
     chain_id: u64,
     tx_type: &'static str,
-    value: U256,
+    value: String,
     nonce: u64,
     gas_limit: u64,
-    gas_price: U128,
+    gas_price: String,
     to: Address,
     input: Bytes,
 }
@@ -105,7 +105,8 @@ pub async fn tx_decoder<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<De
         ),
     };
 
-    
+    let value = value.to_string();
+    let gas_price = gas_price.to_string();
     let data = DecodedTxData { chain_id, tx_type, value, nonce, gas_limit, gas_price, to, input };
 
     let decoded_tx = DecodedTx::new(
@@ -113,7 +114,7 @@ pub async fn tx_decoder<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<De
         tx.block_number.unwrap(),
         tx.block_hash.unwrap().to_string(),
         tx.transaction_index.unwrap(),
-        U128::from(tx.effective_gas_price.unwrap()),
+        tx.effective_gas_price.unwrap().to_string(),
         data,
     );
 

@@ -1,7 +1,8 @@
 use alloy::rpc::types::Transaction;
 use eyre::Result;
 use serde::{Serialize, Deserialize};
-use axum::Json;
+use std::error::Error;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DecodedTx {
     signer: String,
@@ -15,12 +16,12 @@ impl DecodedTx {
     }
 }
 
-pub async fn decoder<T>(tx: &Transaction<T>) -> Result<Json<DecodedTx>> {
+pub async fn decoder<T>(tx: &Transaction<T>) -> Result<DecodedTx, Box<dyn Error>> {
     let signer = tx.inner.signer();
 
 
     let decoded_tx = DecodedTx::new(signer.to_string(), tx.block_number.unwrap());
 
-    Ok(Json(decoded_tx))
+    Ok(decoded_tx)
 }
 

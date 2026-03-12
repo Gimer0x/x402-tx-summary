@@ -12,7 +12,7 @@ mod services;
 use controllers::handlers::{fetcher};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), eyre::Error> {
     dotenvy::dotenv().ok();
 
     let facilitator_url = var("FACILITATOR_URL").unwrap();
@@ -38,4 +38,6 @@ async fn main() {
     let app = app.into_make_service();
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
+
+    Ok(())
 }

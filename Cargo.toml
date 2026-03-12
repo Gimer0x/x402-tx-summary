@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-alloy = { version = "1.7", default-features = false, features = ["provider-http", "network", "reqwest", "reqwest-rustls-tls", "rpc-types"] }
+alloy = { version = "1.7", default-features = false, features = [
+  "provider-http", "network", "reqwest", "reqwest-rustls-tls", "rpc-types", "consensus", "eips"
+] }
 x402-chain-eip155 = { version = "1.4.3", features = ["server"] }
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.50.0", features = ["full"] }

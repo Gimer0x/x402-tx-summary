@@ -4,10 +4,12 @@ use alloy_primitives::{Address, Bytes, U128, U256};
 use eyre::Result;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use dotenvy::var;
+use crate::utils::{tools, etherscan};
 
 
 #[derive(Serialize, Debug)]
-pub struct DecodedTx {
+pub struct FetchedTxData {
     signer: String,
     block_number: u64,
     block_hash: String,
@@ -16,7 +18,7 @@ pub struct DecodedTx {
     data: DecodedTxData
 }
 
-impl DecodedTx {
+impl FetchedTxData {
     pub fn new(
             signer: String, 
             block_number: u64, 
@@ -45,11 +47,10 @@ pub struct DecodedTxData {
     gas_limit: u64,
     gas_price: String,
     to: Address,
-    input: Bytes,
+    input_data: String,
 }
 
-pub async fn tx_decoder<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<DecodedTx, Box<dyn Error>> {
-
+pub async fn get_tx_data<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<FetchedTxData, Box<dyn Error>> {
     let recovered = &tx.inner;
     let envelope = recovered.inner();
 
@@ -107,9 +108,12 @@ pub async fn tx_decoder<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<De
 
     let value = value.to_string();
     let gas_price = gas_price.to_string();
-    let data = DecodedTxData { chain_id, tx_type, value, nonce, gas_limit, gas_price, to, input };
 
-    let decoded_tx = DecodedTx::new(
+    let input_data = decode_input_data(&input,chain_id, to).await;
+
+    let data = DecodedTxData { chain_id, tx_type, value, nonce, gas_limit, gas_price, to, input_data };
+
+    let fetched_tx = FetchedTxData::new(
         tx.inner.signer().to_string(),
         tx.block_number.unwrap(),
         tx.block_hash.unwrap().to_string(),
@@ -118,7 +122,20 @@ pub async fn tx_decoder<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<De
         data,
     );
 
-    
+    Ok(fetched_tx)
+}
 
-    Ok(decoded_tx)
+pub async fn decode_input_data(input: &Bytes, chain_id: u64, to: Address) -> String {
+
+    let etherscan_api_key = var("ETHERSCAN_API_KEY").unwrap();
+
+    if input.len() == 0 {
+        return String::from("0x");
+    }
+
+    let selector = tools::get_selector(&input);
+
+    let abi = etherscan::fetch_etherscan_abi(chain_id, to.to_string().as_str(), selector.unwrap(), etherscan_api_key.as_str()).await.unwrap();
+
+    input.to_string()
 }

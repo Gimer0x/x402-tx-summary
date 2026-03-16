@@ -915,11 +915,13 @@ name = "axum-x402"
 version = "0.1.0"
 dependencies = [
  "alloy",
+ "alloy-json-abi",
  "alloy-primitives",
  "axum",
  "dotenvy",
  "eyre",
  "http",
+ "reqwest 0.13.2",
  "serde",
  "serde_json",
  "thiserror 2.0.18",

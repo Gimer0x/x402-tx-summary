@@ -8,6 +8,7 @@ use x402_types::networks::USDC;
 
 mod controllers;
 mod services;
+mod utils;
 
 use controllers::handlers::fetcher;
 

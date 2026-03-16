@@ -8,7 +8,7 @@ use http::StatusCode;
 use serde_json::{Value, json};
 
 pub async fn fetcher(Path(tx_hash): Path<String>) -> impl IntoResponse {
-    let alchemy_api_key = var("ALCHEMY_API_KEY").unwrap();
+    let alchemy_api_key = var("BASE_RPC_URL").unwrap();
 
     let rpc_url = alchemy_api_key.to_string();
     let result = tx_fetcher(rpc_url.as_str(), tx_hash.as_str()).await;

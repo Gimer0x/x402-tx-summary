@@ -137,5 +137,9 @@ pub async fn decode_input_data(input: &Bytes, chain_id: u64, to: Address) -> Str
 
     let abi = etherscan::fetch_etherscan_abi(chain_id, to.to_string().as_str(), selector.unwrap(), etherscan_api_key.as_str()).await.unwrap();
 
+    println!("ABI: {:?}", abi);
+
+    
+
     input.to_string()
 }

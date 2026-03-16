@@ -4,8 +4,18 @@ use alloy_primitives::{Address, Bytes, U128, U256};
 use eyre::Result;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::fmt;
 use dotenvy::var;
 use crate::utils::{tools, etherscan};
+
+#[derive(Debug)]
+struct StrError(String);
+impl fmt::Display for StrError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+impl Error for StrError {}
 
 
 #[derive(Serialize, Debug)]
@@ -109,7 +119,7 @@ pub async fn get_tx_data<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<F
     let value = value.to_string();
     let gas_price = gas_price.to_string();
 
-    let input_data = decode_input_data(&input,chain_id, to).await;
+    let input_data = decode_input_data(&input, chain_id, to).await?;
 
     let data = DecodedTxData { chain_id, tx_type, value, nonce, gas_limit, gas_price, to, input_data };
 
@@ -125,21 +135,23 @@ pub async fn get_tx_data<T>(tx: &Transaction<EthereumTxEnvelope<T>>) -> Result<F
     Ok(fetched_tx)
 }
 
-pub async fn decode_input_data(input: &Bytes, chain_id: u64, to: Address) -> String {
-
-    let etherscan_api_key = var("ETHERSCAN_API_KEY").unwrap();
-
-    if input.len() == 0 {
-        return String::from("0x");
+pub async fn decode_input_data(
+    input: &Bytes,
+    chain_id: u64,
+    to: Address,
+) -> Result<String, Box<dyn Error>> {
+    let etherscan_api_key = var("ETHERSCAN_API_KEY").map_err(|e| -> Box<dyn Error> { Box::new(e) })?;
+    if input.len() < 4 {
+        return Ok(input.to_string());
     }
-
-    let selector = tools::get_selector(&input);
-
-    let abi = etherscan::fetch_etherscan_abi(chain_id, to.to_string().as_str(), selector.unwrap(), etherscan_api_key.as_str()).await.unwrap();
-
-    println!("ABI: {:?}", abi);
-
-    
-
-    input.to_string()
+    let selector = tools::get_selector(input).map_err(|e| -> Box<dyn Error> { Box::new(StrError(e.to_string())) })?;
+    let _abi = etherscan::fetch_etherscan_abi(
+        chain_id,
+        to.to_string().as_str(),
+        selector,
+        etherscan_api_key.as_str(),
+    )
+    .await
+    .map_err(|e| -> Box<dyn Error> { Box::new(e) })?;
+    Ok(input.to_string())
 }

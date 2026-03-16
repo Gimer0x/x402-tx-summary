@@ -1,5 +1,6 @@
 use crate::services::tx_data::get_tx_data;
 use crate::services::tx_fetcher::tx_fetcher;
+use crate::utils::etherscan::EtherscanAbiError;
 use axum::Json;
 use axum::extract::Path;
 use axum::response::IntoResponse;
@@ -16,7 +17,6 @@ pub async fn fetcher(Path(tx_hash): Path<String>) -> impl IntoResponse {
         Ok(Some(tx)) => {
             match get_tx_data(&tx).await {
                 Ok(tx_data) => {
-                    // Turn DecodedTx into serde_json::Value
                     let body: Value = serde_json::to_value(&tx_data)
                         .unwrap_or_else(|_| json!({ "error": "failed to serialize decoded tx" }));
 
@@ -24,7 +24,12 @@ pub async fn fetcher(Path(tx_hash): Path<String>) -> impl IntoResponse {
                 }
                 Err(e) => {
                     let body = json!({ "error": e.to_string() });
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(body))
+                    let status = if e.is::<EtherscanAbiError>() {
+                        StatusCode::BAD_REQUEST
+                    } else {
+                        StatusCode::INTERNAL_SERVER_ERROR
+                    };
+                    (status, Json(body))
                 }
             }
         }

@@ -2,10 +2,27 @@ use std::time::Duration;
 
 use alloy::hex;
 use alloy_json_abi::{Function, JsonAbi};
-use eyre::{bail, eyre};
 use reqwest::Client;
 use serde::Deserialize;
 
+#[derive(Debug, thiserror::Error)]
+pub enum EtherscanAbiError {
+    #[error("Etherscan API error: {0}")]
+    ApiError(String),
+
+    #[error("function with selector 0x{selector} not found in ABI (contract: {address}, chain: {chain_id})")]
+    SelectorNotFound {
+        address: String,
+        chain_id: u64,
+        selector: String,
+    },
+
+    #[error("failed to parse ABI JSON: {0}")]
+    ParseError(#[from] serde_json::Error),
+
+    #[error("request failed: {0}")]
+    Request(#[from] reqwest::Error),
+}
 
 #[derive(Debug, Deserialize)]
 struct EtherscanResponse {
@@ -20,38 +37,29 @@ pub async fn fetch_etherscan_abi(
     contract_address: &str,
     selector: [u8; 4],
     api_key: &str,
-) -> eyre::Result<Function> {
-    
-
-    println!("Fetching ABI from Etherscan for contract address: {} and selector on chain {}: {}", contract_address, chain_id, hex::encode(selector));
-    
-    // Fetch from Etherscan
+) -> Result<Function, EtherscanAbiError> {
     let url = format!(
         "https://api.etherscan.io/v2/api?module=contract&action=getabi&address={}&apikey={}&chainid={}",
         contract_address, api_key, chain_id
     );
 
     let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
-
     let response: EtherscanResponse = client.get(&url).send().await?.json().await?;
 
     if response.status != "1" {
-        bail!("failed to fetch ABI from Etherscan: {}", response.result);
+        return Err(EtherscanAbiError::ApiError(response.result));
     }
 
-    let full_abi: JsonAbi = serde_json::from_str(&response.result)
-        .map_err(|e| eyre!("failed to parse ABI JSON: {}", e))?;
-
+    let full_abi: JsonAbi = serde_json::from_str(&response.result)?;
     let functions: Vec<Function> = full_abi.functions().cloned().collect();
 
     functions
         .into_iter()
         .find(|f| f.selector() == selector)
-        .ok_or_else(|| {
-            eyre!(
-                "function with selector 0x{} not found in ABI",
-                hex::encode(selector)
-            )
+        .ok_or_else(|| EtherscanAbiError::SelectorNotFound {
+            address: contract_address.to_string(),
+            chain_id,
+            selector: hex::encode(selector),
         })
 }
 

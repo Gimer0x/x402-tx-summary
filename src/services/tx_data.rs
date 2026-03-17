@@ -1,12 +1,25 @@
-use crate::utils::{etherscan, tools, tools::TxType};
+use crate::utils::{etherscan, tools::{self, TxType}};
 use alloy::consensus::transaction::EthereumTxEnvelope;
 use alloy::rpc::types::Transaction;
 use alloy_primitives::{Address, Bytes, U128, U256};
 use dotenvy::var;
 use eyre::Result;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::error::Error;
 use std::fmt;
+
+#[derive(Serialize, Debug)]
+pub struct InputTxData {
+    r#type: String,
+    subtype: String,
+    intent: String,
+    summary: String,
+    from: String,
+    to: String,
+    asset_in: String,
+    asset_out: String,
+    amount: String
+}
 
 #[derive(Debug)]
 pub struct StrError(pub String);
@@ -19,7 +32,6 @@ impl Error for StrError {}
 
 #[derive(Serialize, Debug)]
 pub struct FetchedTxData {
-    signer: String,
     block_number: u64,
     block_hash: String,
     transaction_index: u64,
@@ -29,7 +41,6 @@ pub struct FetchedTxData {
 
 impl FetchedTxData {
     pub fn new(
-        signer: String,
         block_number: u64,
         block_hash: String,
         transaction_index: u64,
@@ -37,7 +48,6 @@ impl FetchedTxData {
         data: DecodedTxData,
     ) -> Self {
         Self {
-            signer,
             block_number,
             block_hash,
             transaction_index,
@@ -47,17 +57,15 @@ impl FetchedTxData {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Debug)]
 pub struct DecodedTxData {
     chain_id: u64,
     tx_type: &'static str,
-    value: String,
     nonce: u64,
     gas_limit: u64,
     gas_price: String,
     to: Address,
-    input_data: String,
-    description: String,
+    input_data: InputTxData
 }
 
 pub async fn get_tx_data<T>(
@@ -118,32 +126,45 @@ pub async fn get_tx_data<T>(
         ),
     };
 
-    let tx_match = tools::get_tx_match(&input, value)?;
+    let tx_match = tools::match_tx_type(&input, value)?;
 
-    let description = match tx_match {
-        TxType::ETHTransfer => "ETH transfer",
-        TxType::ERC20Transfer => "ERC20 transfer",
-        _ => "Unknown transaction type",
-    };
-
-    let input_data = decode_input_data(&input, chain_id, to).await?;
+    let input_data = match tx_match {
+        TxType::ETHTransfer => {
+            get_native_tx(
+                &tx.inner.signer().to_string().as_str(), 
+                &to.to_string().as_str(), 
+                value
+            )
+        },
+        TxType::ERC20Transfer => {
+            //decode_input_data(&input, chain_id, to).await?
+            get_native_tx(
+                &tx.inner.signer().to_string().as_str(), 
+                &to.to_string().as_str(), 
+                value
+            )
+        },
+        TxType::Unknown => get_native_tx(
+            &tx.inner.signer().to_string().as_str(), 
+            &to.to_string().as_str(), 
+            value
+        )
+        
+    }?;
 
     let value = value.to_string();
     let gas_price = gas_price.to_string();
     let data = DecodedTxData {
         chain_id,
         tx_type,
-        value,
         nonce,
         gas_limit,
         gas_price,
         to,
-        input_data,
-        description: description.to_string(),
+        input_data
     };
 
     let fetched_tx = FetchedTxData::new(
-        tx.inner.signer().to_string(),
         tx.block_number.unwrap(),
         tx.block_hash.unwrap().to_string(),
         tx.transaction_index.unwrap(),
@@ -152,6 +173,26 @@ pub async fn get_tx_data<T>(
     );
 
     Ok(fetched_tx)
+}
+
+pub fn get_native_tx(signer: &str, to: &str, value: U256) ->  Result<InputTxData, Box<dyn Error>>{
+
+    let value_in_eth = tools::wei_to_eth_string(value);
+
+    let summary = format!("Transfer {} ETH from {} to {}", value_in_eth, signer, to);
+    let native_tx = InputTxData {
+        r#type: "transfer".to_string(),
+        subtype: "native".to_string(),
+        intent: "send_money".to_string(),
+        summary: summary,
+        from: signer.to_string(),
+        to: to.to_string(),
+        asset_in: "ETH".to_string(),
+        asset_out: "".to_string(),
+        amount: value.to_string(),
+    };
+    
+    Ok(native_tx)
 }
 
 pub async fn decode_input_data(

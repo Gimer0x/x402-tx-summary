@@ -20,6 +20,7 @@ pub async fn tx_fetcher(rpc_url: &str, tx_hash: &str) -> Result<Option<Transacti
         .await
         .map_err(|e| FetchTxError::Rpc(e.to_string()))?;
 
+    println!("Transaction: {:?}", tx);
     Ok(tx)
 }
 

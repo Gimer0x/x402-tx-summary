@@ -922,6 +922,7 @@ dependencies = [
  "eyre",
  "http",
  "reqwest 0.13.2",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 2.0.18",

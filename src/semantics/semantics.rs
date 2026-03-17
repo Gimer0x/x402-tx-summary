@@ -17,8 +17,6 @@ impl fmt::Display for StrError {
 }
 impl Error for StrError {}
 
-
-
 pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str) -> Result<InputTxData, Box<dyn Error>> {
     let (receipient, amount) = get_amount_and_recipient(input);
 
@@ -34,11 +32,12 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str) -> Resu
         intent: "send_money".to_string(),
         summary: summary,
         from: signer.to_string(),
-        to: receipient.to_string(),
+        receipient: receipient.to_string(),
         asset_in: "USDT".to_string(),
         asset_out: "".to_string(),
         amount: amount.to_string(),
     };
+    
     Ok(native_tx)
 }
 
@@ -51,7 +50,7 @@ pub fn get_amount_and_recipient(input: &Bytes) -> (Address, U256) {
     (recipient, amount)
 }
 
-pub fn get_native_tx(signer: &str, to: &str, value: U256) ->  Result<InputTxData, Box<dyn Error>>{
+pub fn get_native_tx(signer: &str, receipient: &str, value: U256) ->  Result<InputTxData, Box<dyn Error>>{
 
     let value_in_eth = tools::from_wei_to_string(value, 18);
 
@@ -62,7 +61,7 @@ pub fn get_native_tx(signer: &str, to: &str, value: U256) ->  Result<InputTxData
         intent: "send_money".to_string(),
         summary: summary,
         from: signer.to_string(),
-        to: to.to_string(),
+        receipient: receipient.to_string(),
         asset_in: "ETH".to_string(),
         asset_out: "".to_string(),
         amount: value.to_string(),

@@ -8,7 +8,7 @@ pub struct InputTxData {
     pub intent: String,
     pub summary: String,
     pub from: String,
-    pub to: String,
+    pub receipient: String,
     pub asset_in: String,
     pub asset_out: String,
     pub amount: String

@@ -17,7 +17,7 @@ async fn main() -> Result<(), eyre::Error> {
     dotenvy::dotenv().ok();
 
     let facilitator_url = var("FACILITATOR_URL").unwrap();
-    let price = var("PRICE").unwrap().parse::<f64>().unwrap();
+    let price = var("REQUEST_PRICE").unwrap().parse::<f64>().unwrap();
 
     let x402 = X402Middleware::new(facilitator_url.as_str());
 
@@ -27,7 +27,7 @@ async fn main() -> Result<(), eyre::Error> {
         .expect("RECEIVER_ADDRESS must be a valid Ethereum address");
 
     let app: Router = Router::new()
-        .route("/summary/{tx_hash}", post(fetcher))
+        .route("/summary/{network}/{tx_hash}", post(fetcher))
         .layer(x402.with_price_tag(V1Eip155Exact::price_tag(
             receiver_address,
             USDC::base_sepolia().parse(price).unwrap(),

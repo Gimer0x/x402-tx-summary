@@ -10,7 +10,9 @@ pub enum EtherscanAbiError {
     #[error("Etherscan API error: {0}")]
     ApiError(String),
 
-    #[error("function with selector 0x{selector} not found in ABI (contract: {address}, chain: {chain_id})")]
+    #[error(
+        "function with selector 0x{selector} not found in ABI (contract: {address}, chain: {chain_id})"
+    )]
     SelectorNotFound {
         address: String,
         chain_id: u64,
@@ -78,7 +80,9 @@ mod tests {
         // transfer(address,uint256) selector
         let sel = [0xa9, 0x05, 0x9c, 0xbb];
 
-        let func = fetch_etherscan_abi(8453, addr, sel, &api_key).await.unwrap();
+        let func = fetch_etherscan_abi(8453, addr, sel, &api_key)
+            .await
+            .unwrap();
         println!("{:?}", func);
         assert_eq!(func.name, "transfer");
         assert_eq!(func.inputs.len(), 2);

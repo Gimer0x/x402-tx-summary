@@ -1,72 +1,16 @@
-use crate::utils::{etherscan, tools::{self, TxType}};
+use crate::utils::{tools::{self, TxType, get_chain_name}};
 use alloy::consensus::transaction::EthereumTxEnvelope;
 use alloy::rpc::types::Transaction;
 use alloy_primitives::{Address, Bytes, U128, U256};
-use dotenvy::var;
 use eyre::Result;
-use serde::Serialize;
 use std::error::Error;
-use std::fmt;
 
-#[derive(Serialize, Debug)]
-pub struct InputTxData {
-    r#type: String,
-    subtype: String,
-    intent: String,
-    summary: String,
-    from: String,
-    to: String,
-    asset_in: String,
-    asset_out: String,
-    amount: String
-}
+use crate::models::tx_structs::{FetchedTxData, DecodedTxData, ChainInfo};
+use crate::semantics::semantics::{get_native_tx, get_erc20_transfer_tx};
 
-#[derive(Debug)]
-pub struct StrError(pub String);
-impl fmt::Display for StrError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl Error for StrError {}
 
-#[derive(Serialize, Debug)]
-pub struct FetchedTxData {
-    block_number: u64,
-    block_hash: String,
-    transaction_index: u64,
-    effective_gas_price: String,
-    data: DecodedTxData,
-}
 
-impl FetchedTxData {
-    pub fn new(
-        block_number: u64,
-        block_hash: String,
-        transaction_index: u64,
-        effective_gas_price: String,
-        data: DecodedTxData,
-    ) -> Self {
-        Self {
-            block_number,
-            block_hash,
-            transaction_index,
-            effective_gas_price,
-            data,
-        }
-    }
-}
 
-#[derive(Serialize, Debug)]
-pub struct DecodedTxData {
-    chain_id: u64,
-    tx_type: &'static str,
-    nonce: u64,
-    gas_limit: u64,
-    gas_price: String,
-    to: Address,
-    input_data: InputTxData
-}
 
 pub async fn get_tx_data<T>(
     tx: &Transaction<EthereumTxEnvelope<T>>,
@@ -137,12 +81,8 @@ pub async fn get_tx_data<T>(
             )
         },
         TxType::ERC20Transfer => {
-            //decode_input_data(&input, chain_id, to).await?
-            get_native_tx(
-                &tx.inner.signer().to_string().as_str(), 
-                &to.to_string().as_str(), 
-                value
-            )
+            
+            get_erc20_transfer_tx(&input, chain_id, &tx.inner.signer().to_string().as_str())
         },
         TxType::Unknown => get_native_tx(
             &tx.inner.signer().to_string().as_str(), 
@@ -152,10 +92,13 @@ pub async fn get_tx_data<T>(
         
     }?;
 
-    let value = value.to_string();
+    //let value = value.to_string();
     let gas_price = gas_price.to_string();
     let data = DecodedTxData {
-        chain_id,
+        chain: ChainInfo {
+            chain_id,
+            name: get_chain_name(chain_id),
+        },
         tx_type,
         nonce,
         gas_limit,
@@ -164,59 +107,17 @@ pub async fn get_tx_data<T>(
         input_data
     };
 
-    let fetched_tx = FetchedTxData::new(
-        tx.block_number.unwrap(),
-        tx.block_hash.unwrap().to_string(),
-        tx.transaction_index.unwrap(),
-        tx.effective_gas_price.unwrap().to_string(),
+    let fetched_tx = FetchedTxData {
+        block_number: tx.block_number.unwrap(),
+        block_hash: tx.block_hash.unwrap().to_string(),
+        transaction_index: tx.transaction_index.unwrap(),
+        effective_gas_price: tx.effective_gas_price.unwrap().to_string(),
         data,
-    );
+    };
 
     Ok(fetched_tx)
 }
 
-pub fn get_native_tx(signer: &str, to: &str, value: U256) ->  Result<InputTxData, Box<dyn Error>>{
 
-    let value_in_eth = tools::wei_to_eth_string(value);
 
-    let summary = format!("Transfer {} ETH from {} to {}", value_in_eth, signer, to);
-    let native_tx = InputTxData {
-        r#type: "transfer".to_string(),
-        subtype: "native".to_string(),
-        intent: "send_money".to_string(),
-        summary: summary,
-        from: signer.to_string(),
-        to: to.to_string(),
-        asset_in: "ETH".to_string(),
-        asset_out: "".to_string(),
-        amount: value.to_string(),
-    };
-    
-    Ok(native_tx)
-}
 
-pub async fn decode_input_data(
-    input: &Bytes,
-    chain_id: u64,
-    to: Address,
-) -> Result<String, Box<dyn Error>> {
-    let etherscan_api_key =
-        var("ETHERSCAN_API_KEY").map_err(|e| -> Box<dyn Error> { Box::new(e) })?;
-
-    if input.len() < 4 {
-        return Ok(input.to_string());
-    }
-    let selector = tools::get_selector(input)
-        .map_err(|e| -> Box<dyn Error> { Box::new(StrError(e.to_string())) })?;
-
-    // Let's check if the selector is a well-known selector
-    let _abi = etherscan::fetch_etherscan_abi(
-        chain_id,
-        to.to_string().as_str(),
-        selector,
-        etherscan_api_key.as_str(),
-    )
-    .await
-    .map_err(|e| -> Box<dyn Error> { Box::new(e) })?;
-    Ok(input.to_string())
-}

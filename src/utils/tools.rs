@@ -9,6 +9,20 @@ pub enum TxType {
     Unknown,
 }
 
+pub fn get_chain_name(chain_id: u64) -> String {
+    match chain_id {
+        1 => "Ethereum".to_string(),
+        5 => "Ethereum Goerli".to_string(),
+        137 => "Polygon".to_string(),
+        80001 => "Polygon Mumbai".to_string(),
+        42161 => "Arbitrum".to_string(),
+        421611 => "Arbitrum Sepolia".to_string(),
+        8453 => "Base".to_string(),
+        84532 => "Base Sepolia".to_string(),
+        _ => "Unknown".to_string(),
+    }
+}
+
 /// Extracts the first four bytes from the given byte slice to use as a function selector.
 pub fn get_selector(data: &Bytes) -> eyre::Result<[u8; 4]> {
     data.get(..4)
@@ -35,10 +49,10 @@ pub fn match_tx_type(input: &Bytes, value: U256) -> Result<TxType, eyre::Error> 
     }
 }
 
-pub fn wei_to_eth_string(wei: U256) -> String {
+pub fn from_wei_to_string(wei: U256, decimals: u32) -> String {
     // convert U256 -> Decimal
     let wei_u128: u128 = wei.try_into().unwrap(); // ok if it fits in 128 bits
     let mut d = Decimal::from(wei_u128);
-    let _ = d.set_scale(18);
+    let _ = d.set_scale(decimals);
     d.normalize().to_string()
 }

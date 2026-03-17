@@ -9,6 +9,8 @@ use x402_types::networks::USDC;
 mod controllers;
 mod services;
 mod utils;
+mod models;
+mod semantics;
 
 use controllers::handlers::fetcher;
 

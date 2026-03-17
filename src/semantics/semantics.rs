@@ -37,7 +37,7 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str) -> Resu
         asset_out: "".to_string(),
         amount: amount.to_string(),
     };
-    
+
     Ok(native_tx)
 }
 
@@ -54,7 +54,7 @@ pub fn get_native_tx(signer: &str, receipient: &str, value: U256) ->  Result<Inp
 
     let value_in_eth = tools::from_wei_to_string(value, 18);
 
-    let summary = format!("Transfer {} ETH from {} to {}", value_in_eth, signer, to);
+    let summary = format!("Transfer {} ETH from {} to {}", value_in_eth, signer, receipient);
     let native_tx = InputTxData {
         r#type: "transfer".to_string(),
         subtype: "native".to_string(),

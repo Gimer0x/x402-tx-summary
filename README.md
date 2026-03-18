@@ -1,8 +1,8 @@
 # x402 Semantic Transaction API (Rust)
 
-This project runs a small HTTP API that turns raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
+This project runs an HTTP API that turns raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
 
-It also integrates with the **x402 pay-per-call protocol** via `X402Middleware`, so the endpoint is ready for agent/tool monetization.
+It also integrates with the **x402 pay-per-call protocol** via `X402Middleware`, so the endpoint is ready for agent/tool monetization. This is an MVP version, not all networks, transactions and tokens are supported. 
 
 ## What you get
 
@@ -38,7 +38,7 @@ The server route is defined in `src/main.rs`.
 
 ```bash
 curl -s -X POST \
-  "https://YOUR_NGROK_HOST/summary/8453/0x15987034851c018e8b2871c81cc12708380cc3b5ceae352fb4276a3d34177ec5"
+  "https://YOUR_NGROK_HOST/summary/8453/0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f"
 ```
 
 ### Response shape

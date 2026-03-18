@@ -71,8 +71,12 @@ pub async fn get_tx_data<T>(
 
     let tx_match = match_tx_type(&input, value)?;
 
+    let mut labels = Vec::<String>::new();
+
     let input_data = match tx_match {
         TxType::ETHTransfer => {
+            labels.push("native".to_string());
+            labels.push("transfer".to_string());
             get_native_tx(
                 &tx.inner.signer().to_string().as_str(), 
                 &to.to_string().as_str(), 
@@ -81,7 +85,9 @@ pub async fn get_tx_data<T>(
             )
         },
         TxType::ERC20Transfer => {
-            
+            labels.push("erc20".to_string());
+            labels.push("transfer".to_string());
+            labels.push("stablecoin".to_string());
             get_erc20_transfer_tx(&input, chain_id, &tx.inner.signer().to_string().as_str(), &to.to_string().as_str())
         },
         TxType::Unknown => get_native_tx(
@@ -124,6 +130,7 @@ pub async fn get_tx_data<T>(
 
     let fetched_tx = FetchedTxData {
         schema_version: "0.1.0".to_string(),
+        labels: labels,
         signer: tx.inner.signer().to_string(),
         block_number: tx.block_number.unwrap(),
         block_hash: tx.block_hash.unwrap().to_string(),

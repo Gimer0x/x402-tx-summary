@@ -12,7 +12,7 @@ pub struct InputTxData {
     pub assets_out: Vec<TokenInfo>,
     #[serde(default)]
     pub protocol: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub function: Option<FunctionInfo>,
     pub direction: String,
 }
@@ -33,6 +33,7 @@ pub struct Participants {
 #[derive(Serialize, Debug)]
 pub struct FetchedTxData {
     pub schema_version: String,
+    pub labels: Vec<String>,
     pub block_number: u64,
     pub block_hash: String,
     pub tx_hash: String,
@@ -77,7 +78,8 @@ pub struct TokenInfo {
     pub name: String,
     pub symbol: String,
     pub decimals: u64,
-    pub raw_amount: u128,
-    pub amount: f64,
-    pub token_address: String,
+    pub raw_amount: String,
+    pub amount: String,
+    #[serde(default)]
+    pub token_address: Option<String>,
 }

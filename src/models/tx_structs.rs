@@ -12,7 +12,16 @@ pub struct InputTxData {
     pub asset_out: Vec<TokenInfo>,
     pub amount: String,
     pub protocol: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub function: Option<FunctionInfo>,
 }
+
+#[derive(Serialize, Debug)]
+pub struct FunctionInfo {
+    pub selector: String,
+    pub name: String,
+}
+
 
 #[derive(Serialize, Debug)]
 pub struct Participants {
@@ -38,7 +47,7 @@ pub struct DecodedTxData {
     pub nonce: u64,
     pub gas: Gas,
     pub to: Address,
-    pub input_data: InputTxData
+    pub actions: Vec<InputTxData>
 }
 #[derive(Serialize, Debug)]
 pub struct Gas {

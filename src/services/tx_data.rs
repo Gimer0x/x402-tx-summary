@@ -116,7 +116,7 @@ pub async fn get_tx_data<T>(
         nonce,
         gas,
         to,
-        input_data
+        actions: vec![input_data],
     };
 
     let fetched_tx = FetchedTxData {

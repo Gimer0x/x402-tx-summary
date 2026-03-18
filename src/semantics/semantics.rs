@@ -1,7 +1,8 @@
 use crate::utils::{tools, blockchain::{get_chain_info, get_token_info}};
-use crate::models::tx_structs::{InputTxData, TokenInfo, Participants};
+use crate::models::tx_structs::{InputTxData, TokenInfo, Participants, FunctionInfo};
 use std::error::Error;
 use alloy_primitives::{Bytes, U256, Address};
+use alloy::hex;
 // use dotenvy::var;
 // use crate::utils::etherscan;
 // use std::fmt;
@@ -23,6 +24,8 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
     let amount_in_string = tools::from_wei_to_string(amount, token_decimals.try_into().unwrap());
     let (chain_name, _) = get_chain_info(chain_id);
     let summary = format!("Transfer {amount_in_string} {token_symbol} from {signer} to {receiver} on {chain_name}");
+
+    let selector = tools::get_selector(input).unwrap();
 
     let token_info = TokenInfo {
         name: token_name,
@@ -46,6 +49,10 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
         asset_out: vec![],
         amount: amount.to_string(),
         protocol: "".to_string(),
+        function: Some(FunctionInfo {
+            selector: hex::encode(selector),
+            name: "transfer".to_string(),
+        }),
     };
 
     Ok(native_tx)
@@ -93,6 +100,7 @@ pub fn get_native_tx(signer: &str, receiver: &str, value: U256, chain_id: u64) -
         asset_out: vec![],
         amount: value.to_string(),
         protocol: "".to_string(),
+        function: None,
     };
     
     Ok(native_tx)

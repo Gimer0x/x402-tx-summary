@@ -9,13 +9,14 @@ pub struct InputTxData {
     pub summary: String,
     pub from: String,
     pub recipient: String,
-    pub asset_in: String,
+    pub asset_in: Vec<TokenInfo>,
     pub asset_out: String,
     pub amount: String
 }
 
 #[derive(Serialize, Debug)]
 pub struct FetchedTxData {
+    pub schema_version: String,
     pub block_number: u64,
     pub block_hash: String,
     pub tx_hash: String,
@@ -41,4 +42,11 @@ pub struct ChainInfo {
     pub chain_id: u64,
     pub name: String,
     pub native_asset: String,
+}
+
+#[derive(Serialize, Debug)]
+pub struct TokenInfo {
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u64,
 }

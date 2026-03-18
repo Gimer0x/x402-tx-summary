@@ -9,20 +9,6 @@ pub enum TxType {
     Unknown,
 }
 
-pub fn get_chain_info(chain_id: u64) -> (String, String) {
-    match chain_id {
-        1 => ("Ethereum".to_string(), "ETH".to_string()),
-        5 => ("Ethereum Goerli".to_string(), "ETH".to_string()),
-        137 => ("Polygon".to_string(), "MATIC".to_string()),
-        80001 => ("Polygon Mumbai".to_string(), "MATIC".to_string()),
-        42161 => ("Arbitrum".to_string(), "ETH".to_string()),
-        421611 => ("Arbitrum Sepolia".to_string(), "ETH".to_string()),
-        8453 => ("Base".to_string(), "ETH".to_string()),
-        84532 => ("Base Sepolia".to_string(), "ETH".to_string()),
-        _ => ("Unknown".to_string(), "UNKNOWN".to_string()),
-    }
-}
-
 /// Extracts the first four bytes from the given byte slice to use as a function selector.
 pub fn get_selector(data: &Bytes) -> eyre::Result<[u8; 4]> {
     data.get(..4)

@@ -1,4 +1,4 @@
-use crate::utils::{tools::{self, TxType, get_chain_info}};
+use crate::utils::{tools::{TxType, match_tx_type}, blockchain::get_chain_info};
 use alloy::consensus::transaction::EthereumTxEnvelope;
 use alloy::rpc::types::Transaction;
 use alloy_primitives::{Address, Bytes, U128, U256};
@@ -7,8 +7,6 @@ use std::error::Error;
 
 use crate::models::tx_structs::{FetchedTxData, DecodedTxData, ChainInfo};
 use crate::semantics::semantics::{get_native_tx, get_erc20_transfer_tx};
-
-
 
 
 
@@ -71,7 +69,7 @@ pub async fn get_tx_data<T>(
         ),
     };
 
-    let tx_match = tools::match_tx_type(&input, value)?;
+    let tx_match = match_tx_type(&input, value)?;
 
     let input_data = match tx_match {
         TxType::ETHTransfer => {
@@ -84,7 +82,7 @@ pub async fn get_tx_data<T>(
         },
         TxType::ERC20Transfer => {
             
-            get_erc20_transfer_tx(&input, chain_id, &tx.inner.signer().to_string().as_str())
+            get_erc20_transfer_tx(&input, chain_id, &tx.inner.signer().to_string().as_str(), &to.to_string().as_str())
         },
         TxType::Unknown => get_native_tx(
             &tx.inner.signer().to_string().as_str(), 
@@ -113,6 +111,7 @@ pub async fn get_tx_data<T>(
     };
 
     let fetched_tx = FetchedTxData {
+        schema_version: "0.1.0".to_string(),
         signer: tx.inner.signer().to_string(),
         block_number: tx.block_number.unwrap(),
         block_hash: tx.block_hash.unwrap().to_string(),

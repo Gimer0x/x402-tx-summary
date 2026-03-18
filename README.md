@@ -1,10 +1,8 @@
 # Agent-Ready Semantic Transaction Decoder for Web3 (Rust)
 
-This project is an open infrastructure layer that converts raw blockchain transactions into structured semantic actions for AI agents, wallets, and developer tools.
+This rurst project is an open infrastructure layer that converts raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
 
-The project runs an HTTP API that turns raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
-
-It also integrates with the **x402 pay-per-call protocol** via `X402Middleware`, so the endpoint is ready for agent/tool monetization. This is an MVP version, not all networks, transactions and tokens are supported. 
+It also integrates with the **x402 pay-per-call protocol** via `X402Middleware`, so the endpoint is ready for agent/tool monetization. This is an MVP version, only a few networks and tokens are supported yet.
 
 ## What you get
 
@@ -37,10 +35,16 @@ The server route is defined in `src/main.rs`.
 - `tx_hash`: transaction hash (0x-prefixed 32-byte hex string)
 
 #### Example
+To run the client define the .env variables `EVM_PRIVATE_KEY` and `SERVER_HOST`. The account must have enough `USDC` funds on `Base Sepolia` to pay for the service (e.g., 0.001 USDC). The `SERVER_HOST` is the host name of the API server, if you are running the project locally, you have to expose it via a tunneling setup (e.g., ngrok).
 
+ and send a request, example:
 ```bash
-curl -s -X POST \
-  "https://YOUR_NGROK_HOST/summary/8453/0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f"
+cargo run -q 8453 0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f
+```
+
+This is an example of the API call:
+```bash
+https://valery-neon-lyon.ngrok-free.dev/summary/8453/0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f
 ```
 
 ### Response shape
@@ -74,29 +78,19 @@ The server expects these variables:
 
 ### x402 middleware
 
-- `FACILITATOR_URL`
+- `FACILITATOR_URL` (e.g., https://facilitator.x402.rs)
 - `RECEIVER_ADDRESS` (Ethereum address)
 - `REQUEST_PRICE` (numeric; price used for the x402 price tag)
 
-### RPC endpoints
-
-Used by `get_rpc_url(network)` in `src/utils/tools.rs`:
-
-- `ETHEREUM_RCP_URL` for `network=1` (note: the variable name is `RCP_URL` in the code)
-- `BASE_RPC_URL` for `network=8453`
-- `BASE_SEPOLIA_RPC_URL` for `network=84532`
-
-### Etherscan API key (only needed when using ABI lookup)
+### Etherscan API key (only needed when using ABI lookup, not implemented yet)
 
 - `ETHERSCAN_API_KEY`
 
-Depending on the decoded action path you exercise, ABI lookup may be used (generic selector decoding).
-
 ## How the semantic layer works
 
-At a high level (see `src/services/tx_fetcher.rs`, `src/services/tx_data.rs`, `src/semantics/semantics.rs`):
+At a high level:
 
-1. **Fetch** the transaction via RPC (`tx_fetcher`).
+1. **Fetch** the transaction via RPC.
 2. **Classify** the transaction:
    - empty calldata + non-zero value => native transfer
    - calldata selector `0xa9059cbb` => ERC-20 `transfer(address,uint256)`
@@ -106,16 +100,14 @@ At a high level (see `src/services/tx_fetcher.rs`, `src/services/tx_data.rs`, `s
 
 ### Token metadata
 
-Token name/symbol/decimals are currently provided by `src/utils/blockchain.rs` and are **hardcoded for a small set of known token addresses** (plus the native asset case).
-
-This keeps the implementation simple while you iterate on the semantic capabilities.
+Token name/symbol/decimals are currently **hardcoded for a small set of known token addresses** (plus the native asset case). This keeps the implementation simple while we iterate on the semantic capabilities.
 
 ## Interacting with x402
 
 This server is wrapped with `X402Middleware`:
 
 - The middleware is configured in `src/main.rs`.
-- When your x402 client integrates with the protocol, calls can be billed/authorized at the x402 layer.
+- When the x402 client integrates with the protocol, calls can be billed/authorized at the x402 layer.
 
 For details on how to construct x402 tool/payment requests, refer to the x402 client/protocol documentation and your client SDK usage.
 

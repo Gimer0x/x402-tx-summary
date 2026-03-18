@@ -1,4 +1,4 @@
-use crate::utils::{tools::{self, TxType, get_chain_name}};
+use crate::utils::{tools::{self, TxType, get_chain_info}};
 use alloy::consensus::transaction::EthereumTxEnvelope;
 use alloy::rpc::types::Transaction;
 use alloy_primitives::{Address, Bytes, U128, U256};
@@ -14,6 +14,7 @@ use crate::semantics::semantics::{get_native_tx, get_erc20_transfer_tx};
 
 pub async fn get_tx_data<T>(
     tx: &Transaction<EthereumTxEnvelope<T>>,
+    tx_hash: &str,
 ) -> Result<FetchedTxData, Box<dyn Error>> {
     let recovered = &tx.inner;
     let envelope = recovered.inner();
@@ -77,7 +78,8 @@ pub async fn get_tx_data<T>(
             get_native_tx(
                 &tx.inner.signer().to_string().as_str(), 
                 &to.to_string().as_str(), 
-                value
+                value,
+                chain_id
             )
         },
         TxType::ERC20Transfer => {
@@ -87,17 +89,20 @@ pub async fn get_tx_data<T>(
         TxType::Unknown => get_native_tx(
             &tx.inner.signer().to_string().as_str(), 
             &to.to_string().as_str(), 
-            value
+            value,
+            chain_id
         )
         
     }?;
 
     //let value = value.to_string();
     let gas_price = gas_price.to_string();
+    let (chain_name, native_asset) = get_chain_info(chain_id);
     let data = DecodedTxData {
         chain: ChainInfo {
             chain_id,
-            name: get_chain_name(chain_id),
+            name: chain_name,
+            native_asset,
         },
         tx_type,
         nonce,
@@ -108,8 +113,10 @@ pub async fn get_tx_data<T>(
     };
 
     let fetched_tx = FetchedTxData {
+        signer: tx.inner.signer().to_string(),
         block_number: tx.block_number.unwrap(),
         block_hash: tx.block_hash.unwrap().to_string(),
+        tx_hash: tx_hash.to_string(),
         transaction_index: tx.transaction_index.unwrap(),
         effective_gas_price: tx.effective_gas_price.unwrap().to_string(),
         data,

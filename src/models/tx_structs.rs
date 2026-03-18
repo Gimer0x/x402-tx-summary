@@ -8,7 +8,7 @@ pub struct InputTxData {
     pub intent: String,
     pub summary: String,
     pub from: String,
-    pub receipient: String,
+    pub recipient: String,
     pub asset_in: String,
     pub asset_out: String,
     pub amount: String
@@ -18,9 +18,11 @@ pub struct InputTxData {
 pub struct FetchedTxData {
     pub block_number: u64,
     pub block_hash: String,
+    pub tx_hash: String,
     pub transaction_index: u64,
     pub effective_gas_price: String,
     pub data: DecodedTxData,
+    pub signer: String,
 }
 
 #[derive(Serialize, Debug)]
@@ -38,4 +40,5 @@ pub struct DecodedTxData {
 pub struct ChainInfo {
     pub chain_id: u64,
     pub name: String,
+    pub native_asset: String,
 }

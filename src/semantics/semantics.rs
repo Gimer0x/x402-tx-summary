@@ -18,13 +18,14 @@ impl fmt::Display for StrError {
 impl Error for StrError {}
 
 pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str) -> Result<InputTxData, Box<dyn Error>> {
-    let (receipient, amount) = get_amount_and_recipient(input);
+    let (recipient, amount) = get_amount_and_recipient(input);
 
     // TODO: Get the name of the ERC20 token
     // TODO: Get the symbol of the ERC20 token
     // TODO: Get the decimals of the ERC20 token
     let amount_in_string = tools::from_wei_to_string(amount, 6);
-    let summary = format!("Transfer {} ERC20 from {} to {}", amount_in_string, signer, receipient);
+    let (chain_name, _) = tools::get_chain_info(chain_id);
+    let summary = format!("Transfer {} ERC20 from {} to {} on {}", amount_in_string, signer, recipient, chain_name);
 
     let native_tx = InputTxData {
         r#type: "transfer".to_string(),
@@ -32,7 +33,7 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str) -> Resu
         intent: "send_money".to_string(),
         summary: summary,
         from: signer.to_string(),
-        receipient: receipient.to_string(),
+        recipient: recipient.to_string(),
         asset_in: "USDT".to_string(),
         asset_out: "".to_string(),
         amount: amount.to_string(),
@@ -50,19 +51,20 @@ pub fn get_amount_and_recipient(input: &Bytes) -> (Address, U256) {
     (recipient, amount)
 }
 
-pub fn get_native_tx(signer: &str, receipient: &str, value: U256) ->  Result<InputTxData, Box<dyn Error>>{
+pub fn get_native_tx(signer: &str, recipient: &str, value: U256, chain_id: u64) ->  Result<InputTxData, Box<dyn Error>>{
 
     let value_in_eth = tools::from_wei_to_string(value, 18);
+    let (chain_name, native_asset) = tools::get_chain_info(chain_id);
 
-    let summary = format!("Transfer {} ETH from {} to {}", value_in_eth, signer, receipient);
+    let summary = format!("Transfer {} {} from {} to {} on {}", value_in_eth, native_asset, signer, recipient, chain_name);
     let native_tx = InputTxData {
         r#type: "transfer".to_string(),
         subtype: "native".to_string(),
         intent: "send_money".to_string(),
         summary: summary,
         from: signer.to_string(),
-        receipient: receipient.to_string(),
-        asset_in: "ETH".to_string(),
+        recipient: recipient.to_string(),
+        asset_in: native_asset.to_string(),
         asset_out: "".to_string(),
         amount: value.to_string(),
     };

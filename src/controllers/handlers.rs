@@ -14,7 +14,7 @@ pub async fn fetcher(Path((network, tx_hash)): Path<(String, String)>) -> impl I
 
     let result = tx_fetcher(&rpc_url.as_str(), tx_hash.as_str()).await;
     match result {
-        Ok(Some(tx)) => match get_tx_data(&tx).await {
+        Ok(Some(tx)) => match get_tx_data(&tx, &tx_hash).await {
             Ok(tx_data) => {
                 let body: Value = serde_json::to_value(&tx_data)
                     .unwrap_or_else(|_| json!({ "error": "failed to serialize decoded tx" }));

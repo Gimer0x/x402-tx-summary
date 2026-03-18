@@ -9,17 +9,17 @@ pub enum TxType {
     Unknown,
 }
 
-pub fn get_chain_name(chain_id: u64) -> String {
+pub fn get_chain_info(chain_id: u64) -> (String, String) {
     match chain_id {
-        1 => "Ethereum".to_string(),
-        5 => "Ethereum Goerli".to_string(),
-        137 => "Polygon".to_string(),
-        80001 => "Polygon Mumbai".to_string(),
-        42161 => "Arbitrum".to_string(),
-        421611 => "Arbitrum Sepolia".to_string(),
-        8453 => "Base".to_string(),
-        84532 => "Base Sepolia".to_string(),
-        _ => "Unknown".to_string(),
+        1 => ("Ethereum".to_string(), "ETH".to_string()),
+        5 => ("Ethereum Goerli".to_string(), "ETH".to_string()),
+        137 => ("Polygon".to_string(), "MATIC".to_string()),
+        80001 => ("Polygon Mumbai".to_string(), "MATIC".to_string()),
+        42161 => ("Arbitrum".to_string(), "ETH".to_string()),
+        421611 => ("Arbitrum Sepolia".to_string(), "ETH".to_string()),
+        8453 => ("Base".to_string(), "ETH".to_string()),
+        84532 => ("Base Sepolia".to_string(), "ETH".to_string()),
+        _ => ("Unknown".to_string(), "UNKNOWN".to_string()),
     }
 }
 
@@ -40,13 +40,16 @@ pub fn get_rpc_url(network: &str) -> Result<String, eyre::Error> {
 }
 
 pub fn match_tx_type(input: &Bytes, value: U256) -> Result<TxType, eyre::Error> {
+
     if value > 0 && input.is_empty() {
-        Ok(TxType::ETHTransfer)
-    } else if input.starts_with(&[0xa9, 0x05, 0x9c, 0xbb]) {
-        Ok(TxType::ERC20Transfer)
-    } else {
-        Ok(TxType::Unknown)
+        return Ok(TxType::ETHTransfer);
+    } 
+    
+    match get_selector(input) {
+        Ok([0xa9, 0x05, 0x9c, 0xbb]) => Ok(TxType::ERC20Transfer),
+        _ => Ok(TxType::Unknown),
     }
+    
 }
 
 pub fn from_wei_to_string(wei: U256, decimals: u32) -> String {

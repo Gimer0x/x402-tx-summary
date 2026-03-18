@@ -1,6 +1,6 @@
-# Agent-Ready Semantic Transaction Decoder for Web3 (Rust)
+# Agent-Ready Semantic Transaction Decoder for Web3
 
-This rurst project is an open infrastructure layer that converts raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
+This project is an open infrastructure layer in `Rust` that converts raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
 
 It also integrates with the **x402 pay-per-call protocol** via `X402Middleware`, so the endpoint is ready for agent/tool monetization. This is an MVP version, only a few networks and tokens are supported yet.
 

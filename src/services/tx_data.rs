@@ -1,11 +1,11 @@
-use crate::utils::{tools::{TxType, match_tx_type}, blockchain::get_chain_info};
+use crate::utils::{tools::{TxType, match_tx_type, from_wei_to_string}, blockchain::get_chain_info};
 use alloy::consensus::transaction::EthereumTxEnvelope;
 use alloy::rpc::types::Transaction;
 use alloy_primitives::{Address, Bytes, U128, U256};
 use eyre::Result;
 use std::error::Error;
 
-use crate::models::tx_structs::{FetchedTxData, DecodedTxData, ChainInfo};
+use crate::models::tx_structs::{FetchedTxData, DecodedTxData, ChainInfo, Gas};
 use crate::semantics::semantics::{get_native_tx, get_erc20_transfer_tx};
 
 
@@ -24,7 +24,7 @@ pub async fn get_tx_data<T>(
         &'static str,
         U256,
         u64,
-        u64,
+        U256,
         U128,
         Address,
         Bytes,
@@ -37,7 +37,7 @@ pub async fn get_tx_data<T>(
                 "legacy",
                 t.value,
                 t.nonce,
-                t.gas_limit,
+                U256::from(t.gas_limit),
                 U128::from(t.gas_price),
                 to,
                 t.input.clone(),
@@ -51,7 +51,7 @@ pub async fn get_tx_data<T>(
                 "eip1559",
                 t.value,
                 t.nonce,
-                t.gas_limit,
+                U256::from(t.gas_limit),
                 U128::from(t.max_fee_per_gas),
                 to,
                 t.input.clone(),
@@ -62,7 +62,7 @@ pub async fn get_tx_data<T>(
             "unknown",
             U256::from(0u64),
             0,
-            0,
+            U256::from(0u64),
             U128::from(0u64),
             zero_addr,
             Bytes::from(vec![]),
@@ -93,9 +93,19 @@ pub async fn get_tx_data<T>(
         
     }?;
 
-    //let value = value.to_string();
-    let gas_price = gas_price.to_string();
+    let effective_gas_price = tx.effective_gas_price.unwrap();
+
     let (chain_name, native_asset) = get_chain_info(chain_id);
+    let fee_wei = U256::from(gas_price) * U256::from(gas_limit);
+    let fee_eth = from_wei_to_string(fee_wei, 18);
+
+    let gas = Gas {
+        limit: gas_limit.to_string(),
+        price: gas_price.to_string(),
+        effective_gas_price: effective_gas_price.to_string(),
+        max_fee_wei: fee_wei.to_string(),
+        max_fee_eth: fee_eth.to_string(),
+    };
     let data = DecodedTxData {
         chain: ChainInfo {
             chain_id,
@@ -104,8 +114,7 @@ pub async fn get_tx_data<T>(
         },
         tx_type,
         nonce,
-        gas_limit,
-        gas_price,
+        gas,
         to,
         input_data
     };
@@ -117,10 +126,9 @@ pub async fn get_tx_data<T>(
         block_hash: tx.block_hash.unwrap().to_string(),
         tx_hash: tx_hash.to_string(),
         transaction_index: tx.transaction_index.unwrap(),
-        effective_gas_price: tx.effective_gas_price.unwrap().to_string(),
         data,
     };
-
+    
     Ok(fetched_tx)
 }
 

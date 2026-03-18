@@ -1,5 +1,5 @@
 use crate::utils::{tools, blockchain::{get_chain_info, get_token_info}};
-use crate::models::tx_structs::{InputTxData, TokenInfo};
+use crate::models::tx_structs::{InputTxData, TokenInfo, Participants};
 use std::error::Error;
 use alloy_primitives::{Bytes, U256, Address};
 // use dotenvy::var;
@@ -17,15 +17,12 @@ use std::convert::TryInto;
 //impl Error for StrError {}
 
 pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_address: &str) -> Result<InputTxData, Box<dyn Error>> {
-    let (recipient, amount) = get_amount_and_recipient(input);
+    let (receiver, amount) = get_amount_and_receiver(input);
 
-    // TODO: Get the name of the ERC20 token
-    // TODO: Get the symbol of the ERC20 token
-    // TODO: Get the decimals of the ERC20 token
     let (token_name, token_symbol, token_decimals) = get_token_info(chain_id, &token_address.to_string());
     let amount_in_string = tools::from_wei_to_string(amount, token_decimals.try_into().unwrap());
     let (chain_name, _) = get_chain_info(chain_id);
-    let summary = format!("Transfer {amount_in_string} {token_symbol} from {signer} to {recipient} on {chain_name}");
+    let summary = format!("Transfer {amount_in_string} {token_symbol} from {signer} to {receiver} on {chain_name}");
 
     let token_info = TokenInfo {
         name: token_name,
@@ -41,11 +38,14 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
         subtype: "erc20".to_string(),
         intent: "send_money".to_string(),
         summary: summary,
-        from: signer.to_string(),
-        recipient: recipient.to_string(),
+        participants: Participants {
+            sender: signer.to_string(),
+            receiver: receiver.to_string(),
+        },
         asset_in: vec![token_info],
         asset_out: vec![],
         amount: amount.to_string(),
+        protocol: "".to_string(),
     };
 
     Ok(native_tx)
@@ -53,14 +53,14 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
 
 /// Decodes ERC20 transfer(address,uint256) calldata.
 /// Layout: 4-byte selector, then 32-byte word (address right-padded), then 32-byte word (amount).
-pub fn get_amount_and_recipient(input: &Bytes) -> (Address, U256) {
-    let recipient = Address::from_slice(&input[16..36]); // last 20 bytes of first 32-byte word
+pub fn get_amount_and_receiver(input: &Bytes) -> (Address, U256) {
+    let receiver = Address::from_slice(&input[16..36]); // last 20 bytes of first 32-byte word
     let bytes: [u8; 32] = input[36..68].try_into().unwrap(); // second 32-byte word
     let amount = U256::from_be_bytes(bytes);
-    (recipient, amount)
+    (receiver, amount)
 }
 
-pub fn get_native_tx(signer: &str, recipient: &str, value: U256, chain_id: u64) ->  Result<InputTxData, Box<dyn Error>>{
+pub fn get_native_tx(signer: &str, receiver: &str, value: U256, chain_id: u64) ->  Result<InputTxData, Box<dyn Error>>{
 
     let zero_address: Address = Address::from_slice(&[0u8; 20]);
     
@@ -79,17 +79,20 @@ pub fn get_native_tx(signer: &str, recipient: &str, value: U256, chain_id: u64) 
     let value_in_eth = tools::from_wei_to_string(value, token_decimals.try_into().unwrap());
     let (chain_name, native_asset) = get_chain_info(chain_id);
 
-    let summary = format!("Transfer {} {} from {} to {} on {}", value_in_eth, native_asset, signer, recipient, chain_name);
+    let summary = format!("Transfer {} {} from {} to {} on {}", value_in_eth, native_asset, signer, receiver, chain_name);
     let native_tx = InputTxData {
         r#type: "transfer".to_string(),
         subtype: "native".to_string(),
         intent: "send_money".to_string(),
         summary: summary,
-        from: signer.to_string(),
-        recipient: recipient.to_string(),
+        participants: Participants {
+            sender: signer.to_string(),
+            receiver: receiver.to_string(),
+        },
         asset_in: vec![token_info],
         asset_out: vec![],
         amount: value.to_string(),
+        protocol: "".to_string(),
     };
     
     Ok(native_tx)

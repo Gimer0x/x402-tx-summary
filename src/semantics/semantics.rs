@@ -31,6 +31,9 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
         name: token_name,
         symbol: token_symbol,
         decimals: token_decimals,
+        raw_amount: amount.to_string(),
+        amount: amount_in_string,
+        token_address: token_address.to_string(),
     };
 
     let native_tx = InputTxData {
@@ -41,7 +44,7 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
         from: signer.to_string(),
         recipient: recipient.to_string(),
         asset_in: vec![token_info],
-        asset_out: "".to_string(),
+        asset_out: vec![],
         amount: amount.to_string(),
     };
 
@@ -60,14 +63,17 @@ pub fn get_amount_and_recipient(input: &Bytes) -> (Address, U256) {
 pub fn get_native_tx(signer: &str, recipient: &str, value: U256, chain_id: u64) ->  Result<InputTxData, Box<dyn Error>>{
 
     let zero_address: Address = Address::from_slice(&[0u8; 20]);
-
-    println!("zero_address: {zero_address}");
-
+    
     let (token_name, token_symbol, token_decimals) = get_token_info(chain_id, &zero_address.to_string());
+    let amount_in_string = tools::from_wei_to_string(value, token_decimals.try_into().unwrap());
+
     let token_info = TokenInfo {
         name: token_name,
         symbol: token_symbol,
         decimals: token_decimals,
+        raw_amount: value.to_string(),
+        amount: amount_in_string,
+        token_address: "".to_string(),
     };
 
     let value_in_eth = tools::from_wei_to_string(value, token_decimals.try_into().unwrap());
@@ -82,7 +88,7 @@ pub fn get_native_tx(signer: &str, recipient: &str, value: U256, chain_id: u64) 
         from: signer.to_string(),
         recipient: recipient.to_string(),
         asset_in: vec![token_info],
-        asset_out: "".to_string(),
+        asset_out: vec![],
         amount: value.to_string(),
     };
     

@@ -10,7 +10,7 @@ pub struct InputTxData {
     pub from: String,
     pub recipient: String,
     pub asset_in: Vec<TokenInfo>,
-    pub asset_out: String,
+    pub asset_out: Vec<TokenInfo>,
     pub amount: String
 }
 
@@ -49,4 +49,7 @@ pub struct TokenInfo {
     pub name: String,
     pub symbol: String,
     pub decimals: u64,
+    pub raw_amount: String,
+    pub amount: String,
+    pub token_address: String,
 }

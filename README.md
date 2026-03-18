@@ -1,6 +1,8 @@
-# x402 Semantic Transaction API (Rust)
+# Agent-Ready Semantic Transaction Decoder for Web3 (Rust)
 
-This project runs an HTTP API that turns raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
+This project is an open infrastructure layer that converts raw blockchain transactions into structured semantic actions for AI agents, wallets, and developer tools.
+
+The project runs an HTTP API that turns raw blockchain transactions into a **structured semantic representation** (intents and normalized value fields) that is easy for AI agents to consume.
 
 It also integrates with the **x402 pay-per-call protocol** via `X402Middleware`, so the endpoint is ready for agent/tool monetization. This is an MVP version, not all networks, transactions and tokens are supported. 
 

@@ -1,17 +1,17 @@
 
 
 
-pub fn get_chain_info(chain_id: u64) -> (&'static str, &'static str) {
+pub fn get_chain_info(chain_id: u64) -> (&'static str, &'static str, u32) {
     match chain_id {
-        1 => ("Ethereum", "ETH"),
-        5 => ("Ethereum Goerli", "ETH"),
-        137 => ("Polygon", "MATIC"),
-        80001 => ("Polygon Mumbai", "MATIC"),
-        42161 => ("Arbitrum", "ETH"),
-        421611 => ("Arbitrum Sepolia", "ETH"),
-        8453 => ("Base", "ETH"),
-        84532 => ("Base Sepolia", "ETH"),
-        _ => ("Unknown", "UNKNOWN"),
+        1 => ("Ethereum", "ETH", 18),
+        5 => ("Ethereum Goerli", "ETH", 18),
+        137 => ("Polygon", "MATIC", 18),
+        80001 => ("Polygon Mumbai", "MATIC", 18),
+        42161 => ("Arbitrum", "ETH", 18),
+        421611 => ("Arbitrum Sepolia", "ETH", 18),
+        8453 => ("Base", "ETH", 18),
+        84532 => ("Base Sepolia", "ETH", 18),
+        _ => ("Unknown", "UNKNOWN", 0),
     }
 }
 

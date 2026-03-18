@@ -22,8 +22,7 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
 
     let (token_name, token_symbol, token_decimals) = get_token_info(chain_id, &token_address.to_string());
     let amount_in_string = tools::from_wei_to_string(amount, token_decimals.try_into().unwrap());
-    let (chain_name, _) = get_chain_info(chain_id);
-    let summary = format!("Transfer {amount_in_string} {token_symbol} from {signer} to {receiver} on {chain_name}");
+    let summary = format!("Sent {amount_in_string} {token_symbol} from {signer} to {receiver}");
 
     let selector = tools::get_selector(input).unwrap();
 
@@ -31,9 +30,15 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
         name: token_name,
         symbol: token_symbol,
         decimals: token_decimals,
-        raw_amount: amount.to_string(),
-        amount: amount_in_string,
+        raw_amount: amount.try_into().unwrap(),
+        amount: amount_in_string.parse::<f64>().unwrap(),
         token_address: token_address.to_string(),
+    };
+
+    let direction = if signer.to_string() != receiver.to_string() {
+        "outgoing".to_string()
+    } else {
+        "incoming".to_string()
     };
 
     let native_tx = InputTxData {
@@ -45,14 +50,14 @@ pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_a
             sender: signer.to_string(),
             receiver: receiver.to_string(),
         },
-        asset_in: vec![token_info],
-        asset_out: vec![],
-        amount: amount.to_string(),
-        protocol: "".to_string(),
+        assets_in: vec![token_info],
+        assets_out: vec![],
+        protocol: None,
         function: Some(FunctionInfo {
-            selector: hex::encode(selector),
+            selector: "0x".to_string() + &hex::encode(selector),
             name: "transfer".to_string(),
         }),
+        direction: direction,
     };
 
     Ok(native_tx)
@@ -72,21 +77,29 @@ pub fn get_native_tx(signer: &str, receiver: &str, value: U256, chain_id: u64) -
     let zero_address: Address = Address::from_slice(&[0u8; 20]);
     
     let (token_name, token_symbol, token_decimals) = get_token_info(chain_id, &zero_address.to_string());
-    let amount_in_string = tools::from_wei_to_string(value, token_decimals.try_into().unwrap());
+    //let amount_in_string = tools::from_wei_to_string(value, token_decimals.try_into().unwrap());
+    let value_in_wei = tools::from_wei_to_string(U256::from(value), token_decimals.try_into().unwrap());
 
     let token_info = TokenInfo {
         name: token_name,
         symbol: token_symbol,
         decimals: token_decimals,
-        raw_amount: value.to_string(),
-        amount: amount_in_string,
+        raw_amount: value.try_into().unwrap(),
+        amount: value_in_wei.parse::<f64>().unwrap(),
         token_address: "".to_string(),
     };
 
-    let value_in_eth = tools::from_wei_to_string(value, token_decimals.try_into().unwrap());
-    let (chain_name, native_asset) = get_chain_info(chain_id);
+    
+    let (chain_name, native_asset, _) = get_chain_info(chain_id);
 
-    let summary = format!("Transfer {} {} from {} to {} on {}", value_in_eth, native_asset, signer, receiver, chain_name);
+    let summary = format!("Transfer {} {} from {} to {} on {}", value_in_wei, native_asset, signer, receiver, chain_name);
+
+    let direction = if signer.to_string() != receiver.to_string() {
+        "outgoing".to_string()
+    } else {
+        "incoming".to_string()
+    };
+
     let native_tx = InputTxData {
         r#type: "transfer".to_string(),
         subtype: "native".to_string(),
@@ -96,11 +109,11 @@ pub fn get_native_tx(signer: &str, receiver: &str, value: U256, chain_id: u64) -
             sender: signer.to_string(),
             receiver: receiver.to_string(),
         },
-        asset_in: vec![token_info],
-        asset_out: vec![],
-        amount: value.to_string(),
-        protocol: "".to_string(),
+        assets_in: vec![token_info],
+        assets_out: vec![],
+        protocol: None,
         function: None,
+        direction: direction,
     };
     
     Ok(native_tx)

@@ -2,19 +2,19 @@ use crate::utils::{tools, blockchain::{get_chain_info, get_token_info}};
 use crate::models::tx_structs::{InputTxData, TokenInfo};
 use std::error::Error;
 use alloy_primitives::{Bytes, U256, Address};
-use dotenvy::var;
-use crate::utils::etherscan;
-use std::fmt;
+// use dotenvy::var;
+// use crate::utils::etherscan;
+// use std::fmt;
 use std::convert::TryInto;
 
-#[derive(Debug)]
-pub struct StrError(pub String);
-impl fmt::Display for StrError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl Error for StrError {}
+//#[derive(Debug)]
+//pub struct StrError(pub String);
+//impl fmt::Display for StrError {
+//    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//        write!(f, "{}", self.0)
+//    }
+//}
+//impl Error for StrError {}
 
 pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_address: &str) -> Result<InputTxData, Box<dyn Error>> {
     let (recipient, amount) = get_amount_and_recipient(input);
@@ -90,7 +90,7 @@ pub fn get_native_tx(signer: &str, recipient: &str, value: U256, chain_id: u64) 
 }
 
 
-pub async fn decode_input_data(
+/*pub async fn decode_input_data(
     input: &Bytes,
     chain_id: u64,
     to: Address,
@@ -114,4 +114,4 @@ pub async fn decode_input_data(
     .await
     .map_err(|e| -> Box<dyn Error> { Box::new(e) })?;
     Ok(input.to_string())
-}
+}*/

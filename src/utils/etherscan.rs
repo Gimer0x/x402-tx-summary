@@ -1,40 +1,41 @@
-use std::time::Duration;
-
-use alloy::hex;
-use alloy_json_abi::{Function, JsonAbi};
-use reqwest::Client;
-use serde::Deserialize;
+// use std::time::Duration;
+// 
+// use alloy::hex;
+// use alloy_json_abi::{Function, JsonAbi};
+// use reqwest::Client;
+// use serde::Deserialize; 
 
 #[derive(Debug, thiserror::Error)]
 pub enum EtherscanAbiError {
-    #[error("Etherscan API error: {0}")]
-    ApiError(String),
+    //#[error("Etherscan API error: {0}")]
+    //ApiError(String),
 
-    #[error(
+    /*#[error(
         "function with selector 0x{selector} not found in ABI (contract: {address}, chain: {chain_id})"
     )]
     SelectorNotFound {
-        address: String,
-        chain_id: u64,
-        selector: String,
-    },
+         address: String,
+         chain_id: u64,
+         selector: String,
+    },*/
+    
 
     #[error("failed to parse ABI JSON: {0}")]
     ParseError(#[from] serde_json::Error),
 
-    #[error("request failed: {0}")]
-    Request(#[from] reqwest::Error),
+    /*#[error("request failed: {0}")]
+    Request(#[from] reqwest::Error), */
 }
 
-#[derive(Debug, Deserialize)]
+/*#[derive(Debug, Deserialize)]
 struct EtherscanResponse {
     status: String,
     result: String,
-}
+} */
 
-/// Fetches the ABI from Etherscan for the given contract address and looks for a function
-/// matching the provided selector.
-pub async fn fetch_etherscan_abi(
+// Fetches the ABI from Etherscan for the given contract address and looks for a function
+// matching the provided selector.
+/*pub async fn fetch_etherscan_abi(
     chain_id: u64,
     contract_address: &str,
     selector: [u8; 4],
@@ -87,4 +88,4 @@ mod tests {
         assert_eq!(func.name, "transfer");
         assert_eq!(func.inputs.len(), 2);
     }
-}
+} */

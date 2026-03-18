@@ -99,8 +99,8 @@ pub async fn get_tx_data<T>(
     let data = DecodedTxData {
         chain: ChainInfo {
             chain_id,
-            name: chain_name,
-            native_asset,
+            name: chain_name.to_string(),
+            native_asset: native_asset.to_string(),
         },
         tx_type,
         nonce,

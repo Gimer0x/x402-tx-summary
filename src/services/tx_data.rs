@@ -1,14 +1,15 @@
-use crate::utils::{tools::{TxType, match_tx_type, from_wei_to_string}, blockchain::get_chain_info};
+use crate::utils::{
+    blockchain::get_chain_info,
+    tools::{TxType, from_wei_to_string, match_tx_type},
+};
 use alloy::consensus::transaction::EthereumTxEnvelope;
 use alloy::rpc::types::Transaction;
 use alloy_primitives::{Address, Bytes, U128, U256};
 use eyre::Result;
 use std::error::Error;
 
-use crate::models::tx_structs::{FetchedTxData, DecodedTxData, ChainInfo, Gas, NativeAsset};
-use crate::semantics::semantics::{get_native_tx, get_erc20_transfer_tx};
-
-
+use crate::models::tx_structs::{ChainInfo, DecodedTxData, FetchedTxData, Gas, NativeAsset};
+use crate::semantics::semantics::{get_erc20_transfer_tx, get_native_tx};
 
 pub async fn get_tx_data<T>(
     tx: &Transaction<EthereumTxEnvelope<T>>,
@@ -78,25 +79,29 @@ pub async fn get_tx_data<T>(
             labels.push("native".to_string());
             labels.push("transfer".to_string());
             get_native_tx(
-                &tx.inner.signer().to_string().as_str(), 
-                &to.to_string().as_str(), 
+                &tx.inner.signer().to_string().as_str(),
+                &to.to_string().as_str(),
                 value,
-                chain_id
+                chain_id,
             )
-        },
+        }
         TxType::ERC20Transfer => {
             labels.push("erc20".to_string());
             labels.push("transfer".to_string());
             labels.push("stablecoin".to_string());
-            get_erc20_transfer_tx(&input, chain_id, &tx.inner.signer().to_string().as_str(), &to.to_string().as_str())
-        },
+            get_erc20_transfer_tx(
+                &input,
+                chain_id,
+                &tx.inner.signer().to_string().as_str(),
+                &to.to_string().as_str(),
+            )
+        }
         TxType::Unknown => get_native_tx(
-            &tx.inner.signer().to_string().as_str(), 
-            &to.to_string().as_str(), 
+            &tx.inner.signer().to_string().as_str(),
+            &to.to_string().as_str(),
             value,
-            chain_id
-        )
-        
+            chain_id,
+        ),
     }?;
 
     let effective_gas_price = U128::from(tx.effective_gas_price.unwrap());
@@ -138,10 +143,6 @@ pub async fn get_tx_data<T>(
         transaction_index: tx.transaction_index.unwrap(),
         data,
     };
-    
+
     Ok(fetched_tx)
 }
-
-
-
-

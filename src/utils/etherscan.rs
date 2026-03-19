@@ -1,9 +1,9 @@
 // use std::time::Duration;
-// 
+//
 // use alloy::hex;
 // use alloy_json_abi::{Function, JsonAbi};
 // use reqwest::Client;
-// use serde::Deserialize; 
+// use serde::Deserialize;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EtherscanAbiError {
@@ -18,11 +18,8 @@ pub enum EtherscanAbiError {
          chain_id: u64,
          selector: String,
     },*/
-    
-
     #[error("failed to parse ABI JSON: {0}")]
     ParseError(#[from] serde_json::Error),
-
     /*#[error("request failed: {0}")]
     Request(#[from] reqwest::Error), */
 }

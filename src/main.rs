@@ -1,42 +1,32 @@
-use alloy_primitives::Address;
-use axum::{Router, routing::post};
-use dotenvy::var;
 use tokio::net::TcpListener;
-use x402_axum::X402Middleware;
-use x402_chain_eip155::{KnownNetworkEip155, V1Eip155Exact};
-use x402_types::networks::USDC;
+use tracing_subscriber::FmtSubscriber;
 
 mod controllers;
-mod services;
-mod utils;
 mod models;
 mod semantics;
-
-use controllers::handlers::fetcher;
+mod services;
+mod utils;
+mod app;
+mod config;
+mod middleware;
+mod routes;
 
 #[tokio::main]
-async fn main() -> Result<(), eyre::Error> {
+async fn main() -> eyre::Result<()> {
     dotenvy::dotenv().ok();
 
-    let facilitator_url = var("FACILITATOR_URL").unwrap();
-    let price = var("REQUEST_PRICE").unwrap().parse::<f64>().unwrap();
+    // Logging
+    let subscriber = FmtSubscriber::new();
+    tracing::subscriber::set_global_default(subscriber)?;
 
-    let x402 = X402Middleware::new(facilitator_url.as_str());
+    let config = config::Config::from_env()?;
 
-    let receiver_address: Address = var("RECEIVER_ADDRESS")
-        .unwrap()
-        .parse()
-        .expect("RECEIVER_ADDRESS must be a valid Ethereum address");
+    let app = app::build_app(config.clone()).await?;
 
-    let app: Router = Router::new()
-        .route("/summary/{network}/{tx_hash}", post(fetcher))
-        .layer(x402.with_price_tag(V1Eip155Exact::price_tag(
-            receiver_address,
-            USDC::base_sepolia().parse(price).unwrap(),
-        )));
-    let app = app.into_make_service();
-    let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = TcpListener::bind(&config.server_addr).await?;
+    tracing::info!("Server running on {}", config.server_addr);
+
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

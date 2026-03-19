@@ -1,8 +1,11 @@
-use crate::utils::{tools, blockchain::{get_chain_info, get_token_info}};
-use crate::models::tx_structs::{InputTxData, TokenInfo, Participants, FunctionInfo};
-use std::error::Error;
-use alloy_primitives::{Bytes, U256, Address};
+use crate::models::tx_structs::{FunctionInfo, InputTxData, Participants, TokenInfo};
+use crate::utils::{
+    blockchain::{get_chain_info, get_token_info},
+    tools,
+};
 use alloy::hex;
+use alloy_primitives::{Address, Bytes, U256};
+use std::error::Error;
 // use dotenvy::var;
 // use crate::utils::etherscan;
 // use std::fmt;
@@ -17,10 +20,16 @@ use std::convert::TryInto;
 //}
 //impl Error for StrError {}
 
-pub fn get_erc20_transfer_tx(input: &Bytes, chain_id: u64, signer: &str, token_address: &str) -> Result<InputTxData, Box<dyn Error>> {
+pub fn get_erc20_transfer_tx(
+    input: &Bytes,
+    chain_id: u64,
+    signer: &str,
+    token_address: &str,
+) -> Result<InputTxData, Box<dyn Error>> {
     let (receiver, amount) = get_amount_and_receiver(input);
 
-    let (token_name, token_symbol, token_decimals) = get_token_info(chain_id, &token_address.to_string());
+    let (token_name, token_symbol, token_decimals) =
+        get_token_info(chain_id, &token_address.to_string());
     let amount_in_string = tools::from_wei_to_string(amount, token_decimals.try_into().unwrap());
     let summary = format!("Sent {amount_in_string} {token_symbol} from {signer} to {receiver}");
 
@@ -72,16 +81,24 @@ pub fn get_amount_and_receiver(input: &Bytes) -> (Address, U256) {
     (receiver, amount)
 }
 
-pub fn get_native_tx(signer: &str, receiver: &str, value: U256, chain_id: u64) ->  Result<InputTxData, Box<dyn Error>>{
-
+pub fn get_native_tx(
+    signer: &str,
+    receiver: &str,
+    value: U256,
+    chain_id: u64,
+) -> Result<InputTxData, Box<dyn Error>> {
     let zero_address: Address = Address::from_slice(&[0u8; 20]);
-    
-    let (token_name, token_symbol, token_decimals) = get_token_info(chain_id, &zero_address.to_string());
-    
-    let value_in_string = tools::from_wei_to_string(U256::from(value), token_decimals.try_into().unwrap());
+
+    let (token_name, token_symbol, token_decimals) =
+        get_token_info(chain_id, &zero_address.to_string());
+
+    let value_in_string =
+        tools::from_wei_to_string(U256::from(value), token_decimals.try_into().unwrap());
 
     let (chain_name, native_asset, _) = get_chain_info(chain_id);
-    let summary = format!("Sent {value_in_string} {native_asset} from {signer} to {receiver} on {chain_name}");
+    let summary = format!(
+        "Sent {value_in_string} {native_asset} from {signer} to {receiver} on {chain_name}"
+    );
     let token_info = TokenInfo {
         name: token_name,
         symbol: token_symbol,
@@ -112,10 +129,9 @@ pub fn get_native_tx(signer: &str, receiver: &str, value: U256, chain_id: u64) -
         function: None,
         direction: direction,
     };
-    
+
     Ok(native_tx)
 }
-
 
 /*pub async fn decode_input_data(
     input: &Bytes,

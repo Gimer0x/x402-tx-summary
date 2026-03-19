@@ -1,7 +1,7 @@
 use alloy::primitives::{Bytes, U256};
-use rust_decimal::Decimal;
 use dotenvy::var;
 use eyre::eyre;
+use rust_decimal::Decimal;
 
 pub enum TxType {
     ETHTransfer,
@@ -26,16 +26,14 @@ pub fn get_rpc_url(network: &str) -> Result<String, eyre::Error> {
 }
 
 pub fn match_tx_type(input: &Bytes, value: U256) -> Result<TxType, eyre::Error> {
-
     if value > 0 && input.is_empty() {
         return Ok(TxType::ETHTransfer);
-    } 
-    
+    }
+
     match get_selector(input) {
         Ok([0xa9, 0x05, 0x9c, 0xbb]) => Ok(TxType::ERC20Transfer),
         _ => Ok(TxType::Unknown),
     }
-    
 }
 
 pub fn from_wei_to_string(wei: U256, decimals: u32) -> String {

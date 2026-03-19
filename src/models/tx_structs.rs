@@ -1,5 +1,5 @@
+use alloy_primitives::Address;
 use serde::Serialize;
-use alloy_primitives::{Address};
 
 #[derive(Serialize, Debug)]
 pub struct InputTxData {
@@ -22,7 +22,6 @@ pub struct FunctionInfo {
     pub selector: String,
     pub name: String,
 }
-
 
 #[derive(Serialize, Debug)]
 pub struct Participants {
@@ -49,7 +48,7 @@ pub struct DecodedTxData {
     pub nonce: u64,
     pub gas: Gas,
     pub to: Address,
-    pub actions: Vec<InputTxData>
+    pub actions: Vec<InputTxData>,
 }
 #[derive(Serialize, Debug)]
 pub struct Gas {

@@ -5,24 +5,24 @@
 // use reqwest::Client;
 // use serde::Deserialize;
 
-#[derive(Debug, thiserror::Error)]
+/*#[derive(Debug, thiserror::Error)]
 pub enum EtherscanAbiError {
     //#[error("Etherscan API error: {0}")]
     //ApiError(String),
 
-    /*#[error(
+    #[error(
         "function with selector 0x{selector} not found in ABI (contract: {address}, chain: {chain_id})"
     )]
     SelectorNotFound {
          address: String,
          chain_id: u64,
          selector: String,
-    },*/
+    },
     #[error("failed to parse ABI JSON: {0}")]
     ParseError(#[from] serde_json::Error),
-    /*#[error("request failed: {0}")]
-    Request(#[from] reqwest::Error), */
-}
+    #[error("request failed: {0}")]
+    Request(#[from] reqwest::Error),
+} */
 
 /*#[derive(Debug, Deserialize)]
 struct EtherscanResponse {
@@ -61,9 +61,9 @@ struct EtherscanResponse {
             chain_id,
             selector: hex::encode(selector),
         })
-}
+} */
 
-#[cfg(test)]
+/*#[cfg(test)]
 mod tests {
     use dotenvy::var;
 

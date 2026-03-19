@@ -13,9 +13,12 @@ impl Config {
         Ok(Self {
             server_addr: var("SERVER_ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_string()),
             facilitator_url: var("FACILITATOR_URL")
-                .map_err(|_| eyre::eyre!("FACILITATOR_URL missing"))?,
-            receiver_address: var("RECEIVER_ADDRESS")?,
-            request_price: var("REQUEST_PRICE")?.parse()?,
+                .map_err(|e| eyre::eyre!("FACILITATOR_URL missing: {e}"))?,
+            receiver_address: var("RECEIVER_ADDRESS")
+                .map_err(|e| eyre::eyre!("RECEIVER_ADDRESS missing: {e}"))?,
+            request_price: var("REQUEST_PRICE")
+                .map_err(|e| eyre::eyre!("REQUEST_PRICE missing: {e}"))?
+                .parse()?,
         })
     }
 }

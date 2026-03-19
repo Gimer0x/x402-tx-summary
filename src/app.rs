@@ -6,6 +6,7 @@ use tower_http::{cors::CorsLayer, timeout::TimeoutLayer, trace::TraceLayer};
 use x402_axum::X402Middleware;
 use x402_chain_eip155::{KnownNetworkEip155, V1Eip155Exact};
 use x402_types::networks::USDC;
+use axum::routing::get;
 
 use crate::{config::Config, routes::tx_routes::tx_routes};
 
@@ -25,10 +26,12 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
         V1Eip155Exact::price_tag(receiver_address, USDC::base_sepolia().parse(price).unwrap()),
     );
 
+    let protected = tx_routes().layer(x402);
+
     let app = Router::new()
-        .merge(tx_routes())
+        .route("/health", get(|| async { "ok" }))
+        .merge(protected)
         .layer(middleware_stack)
-        .layer(x402)
         .layer(cors());
 
     Ok(app)

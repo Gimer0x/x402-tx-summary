@@ -1,15 +1,16 @@
 use tokio::net::TcpListener;
 use tracing_subscriber::FmtSubscriber;
 
+mod app;
+mod config;
 mod controllers;
+mod middleware;
 mod models;
+mod routes;
 mod semantics;
 mod services;
 mod utils;
-mod app;
-mod config;
-mod middleware;
-mod routes;
+mod errors;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {

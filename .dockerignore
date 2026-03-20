@@ -16,6 +16,6 @@ tmp
 temp
 .DS_Store
 
-fly.toml
+# Keep fly.toml in build context (small); Fly also sends it at deploy time.
 README.md
 notes.txt

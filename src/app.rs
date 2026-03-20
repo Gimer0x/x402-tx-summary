@@ -47,17 +47,20 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let price: f64 = config.request_price;
 
     let x402 = X402Middleware::new(&config.facilitator_url).with_price_tag(
-        V1Eip155Exact::price_tag(receiver_address, USDC::base_sepolia().parse(price).unwrap()),
+        V1Eip155Exact::price_tag(receiver_address, USDC::base().parse(price).unwrap()),
     );
 
-    let x402 = tx_routes().layer(x402);
+    // Keep `/health` outside rate limits, load shed, and body limits so Fly
+    // `http_service.checks` (and k8s-style probes) always get 200 from a cheap handler.
+    let paid_api = tx_routes()
+        .layer(x402)
+        .layer(cors(config.cors_origin))
+        .layer(middleware_stack);
 
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
-        .merge(x402)
-        .layer(cors(config.cors_origin))
-        .layer(middleware_stack);
-    
+        .merge(paid_api);
+
     Ok(app)
 }
 

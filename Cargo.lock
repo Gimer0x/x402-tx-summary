@@ -932,7 +932,6 @@ dependencies = [
  "tower_governor",
  "tracing",
  "tracing-subscriber",
- "url",
  "x402-axum",
  "x402-chain-eip155",
  "x402-types",

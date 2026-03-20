@@ -12,7 +12,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> eyre::Result<Self> {
         Ok(Self {
-            server_addr: var("SERVER_ADDR").unwrap_or_else(|_| "127.0.0.1:3000".to_string()),
+            server_addr: var("SERVER_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".to_string()),
             facilitator_url: var("FACILITATOR_URL")
                 .map_err(|e| eyre::eyre!("FACILITATOR_URL missing: {e}"))?,
             receiver_address: var("RECEIVER_ADDRESS")
@@ -20,7 +20,7 @@ impl Config {
             request_price: var("REQUEST_PRICE")
                 .map_err(|e| eyre::eyre!("REQUEST_PRICE missing: {e}"))?
                 .parse()?,
-            cors_origin: var("CORS_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string()),
+            cors_origin: var("CORS_ORIGIN").unwrap_or_else(|_| "https://dappdojo.com".to_string()),
         })
     }
 }

@@ -13,7 +13,7 @@ COPY . .
 RUN cargo build --release --locked --bin axum-x402
 
 # 3) Runtime image with newer glibc
-FROM ubuntu:24.04-slim AS runtime
+FROM ubuntu:24.04 AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*

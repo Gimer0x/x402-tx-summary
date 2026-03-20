@@ -82,9 +82,24 @@ The server expects these variables:
 - `RECEIVER_ADDRESS` (Ethereum address)
 - `REQUEST_PRICE` (numeric; price used for the x402 price tag)
 
-### Etherscan API key (only needed when using ABI lookup, not implemented yet)
+### RPC endpoints (per chain)
 
-- `ETHERSCAN_API_KEY`
+- `ETHEREUM_RCP_URL` — Ethereum mainnet (`chain id 1`)
+- `BASE_RPC_URL` — Base mainnet (`8453`)
+- `BASE_SEPOLIA_RPC_URL` — Base Sepolia (`84532`)
+
+### Optional
+
+- `SERVER_ADDR` — bind address (default `0.0.0.0:8080`; Fly sets this in `fly.toml` `[env]`)
+- `CORS_ORIGIN` — exact browser `Origin` allowed for CORS (default in code may be your site)
+
+### Etherscan
+
+- `ETHERSCAN_API_KEY` — required when ABI lookup / Etherscan paths are used
+
+### Deploy on Fly.io
+
+See **[docs/FLY_DEPLOY.md](docs/FLY_DEPLOY.md)** for `fly launch`, secrets, and verification.
 
 ## How the semantic layer works
 

@@ -5,7 +5,7 @@ use tower::{ServiceBuilder, limit::concurrency::ConcurrencyLimitLayer, load_shed
 use tower_http::{cors::{CorsLayer, AllowOrigin}, timeout::TimeoutLayer, trace::TraceLayer};
 use x402_axum::X402Middleware;
 use x402_chain_eip155::{KnownNetworkEip155, V1Eip155Exact};
-use x402_types::networks::USDC;
+use x402_types::networks::{USDC};
 use axum::routing::get;
 use tower_governor::{
     GovernorLayer,

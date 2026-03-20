@@ -1075,6 +1075,7 @@ dependencies = [
  "dotenvy",
  "reqwest",
  "reqwest-middleware",
+ "serde_json",
  "tokio",
  "x402-chain-eip155",
  "x402-reqwest",

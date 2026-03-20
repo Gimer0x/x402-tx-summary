@@ -78,9 +78,11 @@ The server expects these variables:
 
 ### x402 middleware
 
-- `FACILITATOR_URL` (e.g., https://facilitator.x402.rs)
+- `FACILITATOR_URL` (e.g., https://facilitator.x402.rs or https://facilitator.openx402.ai)
 - `RECEIVER_ADDRESS` (Ethereum address)
 - `REQUEST_PRICE` (numeric; price used for the x402 price tag)
+
+Facilitator quirks (registration, Base mainnet vs Sepolia): **[docs/FACILITATORS.md](docs/FACILITATORS.md)**.
 
 ### RPC endpoints (per chain)
 

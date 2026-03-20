@@ -6,6 +6,7 @@ pub struct Config {
     pub facilitator_url: String,
     pub receiver_address: String,
     pub request_price: f64,
+    pub cors_origin: String,
 }
 
 impl Config {
@@ -19,6 +20,7 @@ impl Config {
             request_price: var("REQUEST_PRICE")
                 .map_err(|e| eyre::eyre!("REQUEST_PRICE missing: {e}"))?
                 .parse()?,
+            cors_origin: var("CORS_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string()),
         })
     }
 }

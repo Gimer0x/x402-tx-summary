@@ -20,7 +20,6 @@ impl IntoResponse for ApiError {
             ApiError::TXNotFound => (StatusCode::NOT_FOUND, "Transaction not found".to_string()),
         };
 
-        //(status, msg).into_response()
         (status, msg).into_response()
     }
 }

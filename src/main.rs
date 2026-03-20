@@ -4,7 +4,6 @@ use tracing_subscriber::FmtSubscriber;
 mod app;
 mod config;
 mod controllers;
-mod middleware;
 mod models;
 mod routes;
 mod semantics;

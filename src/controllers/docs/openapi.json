@@ -18,38 +18,10 @@
   ],
   "tags": [
     {
-      "name": "Health"
-    },
-    {
       "name": "Summary"
     }
   ],
   "paths": {
-    "/health": {
-      "get": {
-        "tags": [
-          "Health"
-        ],
-        "summary": "Liveness check",
-        "operationId": "getHealth",
-        "security": [
-
-        ],
-        "responses": {
-          "200": {
-            "description": "Service is healthy",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "ok"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/summary/{network}/{tx_hash}": {
       "post": {
         "tags": [

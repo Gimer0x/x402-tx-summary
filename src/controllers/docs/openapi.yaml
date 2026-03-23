@@ -10,6 +10,12 @@ info:
     2. If unpaid, API returns `402 Payment Required` with accepted payment requirements.
     3. Client pays via x402 and retries.
     4. API returns semantic summary JSON.
+  guidance: |
+    Use `POST /summary/{network}/{tx_hash}` to decode EVM transactions.
+    Treat this as a paid endpoint via x402:
+    - First call may return 402 Payment Required.
+    - Pay using x402 (header `X-Payment`) and retry the same URL.
+    - Prefer public HTTPS origin (e.g. api.dappdojo.com) so resource URLs are consistent.
 
 servers:
   - url: https://x402-tx-summary.fly.dev
@@ -27,6 +33,7 @@ paths:
       tags: [Health]
       summary: Liveness check
       operationId: getHealth
+      security: []
       responses:
         "200":
           description: Service is healthy
@@ -46,6 +53,12 @@ paths:
         This route is protected by x402 middleware and may return `402 Payment Required`
         until a valid payment header is provided.
       operationId: postSummary
+      security:
+        - XPaymentHeader: []
+      x-payment-info:
+        protocols: ["x402"]
+        pricingMode: fixed
+        price: "1000"
       parameters:
         - name: network
           in: path
@@ -68,6 +81,26 @@ paths:
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{64}$"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                network:
+                  type: string
+                  description: Same value as path parameter (for agent tooling compatibility).
+                  enum: ["1", "8453", "84532"]
+                tx_hash:
+                  type: string
+                  description: Same value as path parameter (for agent tooling compatibility).
+                  pattern: "^0x[a-fA-F0-9]{64}$"
+            examples:
+              baseMainnet:
+                value:
+                  network: "8453"
+                  tx_hash: "0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1"
       responses:
         "200":
           description: Decoded semantic transaction summary
@@ -87,7 +120,7 @@ paths:
                   invalidTxHash:
                     value: Invalid tx hash
         "402":
-          description: x402 payment required
+          description: Payment Required
           content:
             application/json:
               schema:

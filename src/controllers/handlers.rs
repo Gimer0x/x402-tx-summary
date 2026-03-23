@@ -66,3 +66,10 @@ pub async fn openapi_yaml() -> impl IntoResponse {
         body,
     )
 }
+
+pub async fn x402_well_known() -> impl IntoResponse {
+    Json(json!({
+        "version": 1,
+        "resources": ["POST /summary/{network}/{tx_hash}"]
+    }))
+}

@@ -58,7 +58,11 @@ paths:
       x-payment-info:
         protocols: ["x402"]
         pricingMode: fixed
-        price: "1000"
+        # Human-readable USDC amount for discovery/listing UIs.
+        # Runtime x402 `accepts.maxAmountRequired` remains in token base units (1000 = 0.001 USDC).
+        price: "0.001"
+        assetSymbol: "USDC"
+        assetDecimals: 6
       parameters:
         - name: network
           in: path

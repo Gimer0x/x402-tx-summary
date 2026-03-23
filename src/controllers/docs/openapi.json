@@ -70,7 +70,9 @@
             "x402"
           ],
           "pricingMode": "fixed",
-          "price": "1000"
+          "price": "0.001",
+          "assetSymbol": "USDC",
+          "assetDecimals": 6
         },
         "parameters": [
           {

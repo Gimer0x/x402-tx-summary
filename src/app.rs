@@ -2,19 +2,23 @@ use alloy_primitives::Address;
 use axum::{BoxError, Router, error_handling::HandleErrorLayer, http::StatusCode};
 use std::time::Duration;
 use tower::{ServiceBuilder, limit::concurrency::ConcurrencyLimitLayer, load_shed::LoadShedLayer};
-use tower_http::{cors::{CorsLayer, AllowOrigin}, timeout::TimeoutLayer, trace::TraceLayer};
-use x402_axum::X402Middleware;
-use x402_chain_eip155::{KnownNetworkEip155, V1Eip155Exact};
-use x402_types::networks::{USDC};
-use axum::routing::get;
 use tower_governor::{
-    GovernorLayer,
-    governor::GovernorConfigBuilder,
-    key_extractor::SmartIpKeyExtractor,
+    GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor,
 };
 use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::{
+    cors::{AllowOrigin, CorsLayer},
+    timeout::TimeoutLayer,
+    trace::TraceLayer,
+};
+use x402_axum::X402Middleware;
+use x402_chain_eip155::{KnownNetworkEip155, V1Eip155Exact};
+use x402_types::networks::USDC;
 
-use crate::{config::Config,routes::tx_routes::tx_routes};
+use crate::{
+    config::Config,
+    routes::api_routes::{openapi_routes, ok_route, tx_routes},
+};
 
 pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let governor_config = GovernorConfigBuilder::default()
@@ -58,7 +62,8 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
         .layer(middleware_stack);
 
     let app = Router::new()
-        .route("/health", get(|| async { "ok" }))
+        .merge(ok_route())
+        .merge(openapi_routes())
         .merge(paid_api);
 
     Ok(app)

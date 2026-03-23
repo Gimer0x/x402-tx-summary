@@ -12,6 +12,8 @@ Given a transaction hash and a network, the server:
 2. Detects the high-level action (native ETH transfer vs ERC-20 `transfer`).
 3. Produces a JSON payload with normalized fields like `intent`, `summary`, `amount`, `recipient`, and token metadata.
 
+Note: Currently, only USDT transfers are supported on Ethereum and Base. Other tx types such as: approvals, swaps, etc. will be supported soon. 
+
 ### Why this helps
 
 - **Agent-friendly schema**: downstream LLMs/tools get deterministic fields instead of parsing calldata manually.
@@ -19,6 +21,8 @@ Given a transaction hash and a network, the server:
 - **Pay-per-call readiness (x402)**: the server is wrapped with x402 middleware so calls can be billed and controlled at the protocol layer.
 
 ## API
+
+OpenAPI definition: **[`docs/openapi.yaml`](docs/openapi.yaml)**
 
 ### Endpoint
 
@@ -35,7 +39,7 @@ The server route is defined in `src/main.rs`.
 - `tx_hash`: transaction hash (0x-prefixed 32-byte hex string)
 
 #### Example
-To run the client define the .env variables `EVM_PRIVATE_KEY` and `SERVER_HOST`. The account must have enough `USDC` funds on `Base Sepolia` to pay for the service (e.g., 0.001 USDC). The `SERVER_HOST` is the host name of the API server, if you are running the project locally, you have to expose it via a tunneling setup (e.g., ngrok).
+To run the client define the .env variables `EVM_PRIVATE_KEY` and `SERVER_HOST`. The account must have enough `USDC` funds on `Base` to pay for the service (e.g., 0.001 USDC). The `SERVER_HOST` is the host name of the API server, if you are running the project locally, you have to expose it via a tunneling setup (e.g., ngrok).
 
  and send a request, example:
 ```bash
@@ -44,8 +48,9 @@ cargo run -q 8453 0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797
 
 This is an example of the API call:
 ```bash
-https://valery-neon-lyon.ngrok-free.dev/summary/8453/0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f
+https://api.dappdojo.com/summary/8453/0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1
 ```
+Note: If you execute this you are going to receive an error asking for a payment. Check the client example.
 
 ### Response shape
 
@@ -78,11 +83,9 @@ The server expects these variables:
 
 ### x402 middleware
 
-- `FACILITATOR_URL` (e.g., https://facilitator.x402.rs or https://facilitator.openx402.ai)
+- `FACILITATOR_URL` (e.g., https://facilitator.x402.rs or https://facilitator.xpay.sh)
 - `RECEIVER_ADDRESS` (Ethereum address)
 - `REQUEST_PRICE` (numeric; price used for the x402 price tag)
-
-Facilitator quirks (registration, Base mainnet vs Sepolia): **[docs/FACILITATORS.md](docs/FACILITATORS.md)**.
 
 ### RPC endpoints (per chain)
 

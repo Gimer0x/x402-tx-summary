@@ -4,12 +4,12 @@ use tracing_subscriber::FmtSubscriber;
 mod app;
 mod config;
 mod controllers;
+mod errors;
 mod models;
 mod routes;
 mod semantics;
 mod services;
 mod utils;
-mod errors;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {

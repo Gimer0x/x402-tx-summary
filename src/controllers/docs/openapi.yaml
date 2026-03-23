@@ -1,0 +1,401 @@
+openapi: 3.1.0
+info:
+  title: x402 Transaction Summary API
+  version: 0.1.0
+  description: |
+    Semantic blockchain transaction decoder protected by x402 pay-per-call middleware.
+
+    Main flow:
+    1. Client calls `POST /summary/{network}/{tx_hash}`.
+    2. If unpaid, API returns `402 Payment Required` with accepted payment requirements.
+    3. Client pays via x402 and retries.
+    4. API returns semantic summary JSON.
+
+servers:
+  - url: https://x402-tx-summary.fly.dev
+    description: Fly deployment
+  - url: https://api.dappdojo.com
+    description: Custom domain (optional)
+
+tags:
+  - name: Health
+  - name: Summary
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /summary/{network}/{tx_hash}:
+    post:
+      tags: [Summary]
+      summary: Decode transaction into semantic intent
+      description: |
+        Decodes a transaction from the specified network into a normalized semantic structure.
+
+        This route is protected by x402 middleware and may return `402 Payment Required`
+        until a valid payment header is provided.
+      operationId: postSummary
+      parameters:
+        - name: network
+          in: path
+          required: true
+          description: Numeric EVM chain id.
+          schema:
+            type: string
+            enum: ["1", "8453", "84532"]
+            examples:
+              ethereum:
+                value: "1"
+              base:
+                value: "8453"
+              baseSepolia:
+                value: "84532"
+        - name: tx_hash
+          in: path
+          required: true
+          description: 0x-prefixed 32-byte transaction hash.
+          schema:
+            type: string
+            pattern: "^0x[a-fA-F0-9]{64}$"
+      responses:
+        "200":
+          description: Decoded semantic transaction summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchedTxData"
+        "400":
+          description: Invalid input (network or tx hash)
+          content:
+            text/plain:
+              schema:
+                type: string
+                examples:
+                  invalidNetwork:
+                    value: Invalid network
+                  invalidTxHash:
+                    value: Invalid tx hash
+        "402":
+          description: x402 payment required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/X402PaymentRequiredV1"
+              examples:
+                baseUsdc:
+                  value:
+                    accepts:
+                      - asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+                        description: ""
+                        extra:
+                          assetTransferMethod: eip3009
+                          name: USD Coin
+                          version: "2"
+                        maxAmountRequired: "1000"
+                        maxTimeoutSeconds: 300
+                        mimeType: null
+                        network: base
+                        payTo: "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3"
+                        resource: "https://api.dappdojo.com/summary/8453/0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1"
+                        scheme: exact
+                    error: "Verification failed: address_not_registered"
+                    x402Version: 1
+        "404":
+          description: Transaction not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Transaction not found
+        "500":
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    XPaymentHeader:
+      type: apiKey
+      in: header
+      name: X-Payment
+      description: |
+        x402 payment payload header used for paid retry requests.
+        Clients usually generate this automatically using an x402-aware SDK.
+
+  schemas:
+    FetchedTxData:
+      type: object
+      required:
+        - schema_version
+        - labels
+        - block_number
+        - block_hash
+        - tx_hash
+        - transaction_index
+        - data
+        - signer
+      properties:
+        schema_version:
+          type: string
+          example: "0.1.0"
+        labels:
+          type: array
+          items:
+            type: string
+          example: ["erc20", "transfer", "stablecoin"]
+        block_number:
+          type: integer
+          format: uint64
+          example: 26104298
+        block_hash:
+          type: string
+          example: "0x769909f41d6ea5fa4e5e007c940b19dbd66ca75b9d60208521da57ab3f7d0547"
+        tx_hash:
+          type: string
+          example: "0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1"
+        transaction_index:
+          type: integer
+          format: uint64
+          example: 52
+        signer:
+          type: string
+          example: "0xE5Cff9Ac97633c46C73B92C85927e966f7d4EfaC"
+        data:
+          $ref: "#/components/schemas/DecodedTxData"
+
+    DecodedTxData:
+      type: object
+      required: [chain, tx_type, nonce, gas, to, actions]
+      properties:
+        chain:
+          $ref: "#/components/schemas/ChainInfo"
+        tx_type:
+          type: string
+          enum: [legacy, eip1559, unknown]
+          example: eip1559
+        nonce:
+          type: integer
+          format: uint64
+          example: 234
+        gas:
+          $ref: "#/components/schemas/Gas"
+        to:
+          type: string
+          example: "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/InputTxData"
+
+    ChainInfo:
+      type: object
+      required: [chain_id, name, native_asset]
+      properties:
+        chain_id:
+          type: integer
+          format: uint64
+          example: 8453
+        name:
+          type: string
+          example: Base
+        native_asset:
+          $ref: "#/components/schemas/NativeAsset"
+
+    NativeAsset:
+      type: object
+      required: [symbol, decimals]
+      properties:
+        symbol:
+          type: string
+          example: ETH
+        decimals:
+          type: integer
+          format: uint32
+          example: 18
+
+    Gas:
+      type: object
+      required: [limit, price, effective_gas_price, max_fee_wei, max_fee_eth]
+      properties:
+        limit:
+          type: integer
+          format: uint64
+          example: 52149
+        price:
+          type: integer
+          format: uint64
+          example: 11011442
+        effective_gas_price:
+          type: integer
+          format: uint64
+          example: 3840874
+        max_fee_wei:
+          type: integer
+          format: uint64
+          example: 574235688858
+        max_fee_eth:
+          type: number
+          format: double
+          example: 0.000000574235688858
+
+    InputTxData:
+      type: object
+      required:
+        - type
+        - subtype
+        - intent
+        - summary
+        - participants
+        - assets_in
+        - assets_out
+        - direction
+      properties:
+        type:
+          type: string
+          example: transfer
+        subtype:
+          type: string
+          example: erc20
+        intent:
+          type: string
+          example: send_money
+        summary:
+          type: string
+        participants:
+          $ref: "#/components/schemas/Participants"
+        assets_in:
+          type: array
+          items:
+            $ref: "#/components/schemas/TokenInfo"
+        assets_out:
+          type: array
+          items:
+            $ref: "#/components/schemas/TokenInfo"
+        protocol:
+          type: string
+          nullable: true
+        function:
+          allOf:
+            - $ref: "#/components/schemas/FunctionInfo"
+          nullable: true
+        direction:
+          type: string
+          enum: [incoming, outgoing]
+
+    FunctionInfo:
+      type: object
+      required: [selector, name]
+      properties:
+        selector:
+          type: string
+          example: "0xa9059cbb"
+        name:
+          type: string
+          example: transfer
+
+    Participants:
+      type: object
+      required: [sender, receiver]
+      properties:
+        sender:
+          type: string
+          example: "0xE5Cff9Ac97633c46C73B92C85927e966f7d4EfaC"
+        receiver:
+          type: string
+          example: "0x0fA50a1E47E9Af209D1D0D82F896B9353Ea72861"
+
+    TokenInfo:
+      type: object
+      required: [name, symbol, decimals, raw_amount, amount]
+      properties:
+        name:
+          type: string
+          example: Tether USD
+        symbol:
+          type: string
+          example: USDT
+        decimals:
+          type: integer
+          format: uint64
+          example: 6
+        raw_amount:
+          type: string
+          example: "150049661202"
+        amount:
+          type: string
+          example: "150049.661202"
+        token_address:
+          type: string
+          nullable: true
+          example: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2"
+
+    X402PaymentRequiredV1:
+      type: object
+      required: [accepts, x402Version]
+      properties:
+        accepts:
+          type: array
+          items:
+            $ref: "#/components/schemas/X402AcceptV1"
+        error:
+          type: string
+          nullable: true
+        x402Version:
+          type: integer
+          enum: [1]
+
+    X402AcceptV1:
+      type: object
+      required:
+        - scheme
+        - payTo
+        - asset
+        - network
+        - maxAmountRequired
+        - resource
+        - maxTimeoutSeconds
+      properties:
+        scheme:
+          type: string
+          example: exact
+        payTo:
+          type: string
+          example: "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3"
+        asset:
+          type: string
+          example: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+        network:
+          type: string
+          example: base
+        maxAmountRequired:
+          type: string
+          example: "1000"
+        resource:
+          type: string
+          format: uri
+        description:
+          type: string
+          nullable: true
+        mimeType:
+          type: string
+          nullable: true
+        maxTimeoutSeconds:
+          type: integer
+          format: uint32
+          example: 300
+        extra:
+          type: object
+          additionalProperties: true

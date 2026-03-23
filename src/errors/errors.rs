@@ -1,6 +1,6 @@
 use axum::{
-    response::{IntoResponse, Response},
     http::StatusCode,
+    response::{IntoResponse, Response},
 };
 
 #[derive(Debug)]

@@ -39,6 +39,43 @@
           "assetSymbol": "USDC",
           "assetDecimals": 6
         },
+        "extensions": {
+          "bazaar": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "input",
+                "output"
+              ],
+              "properties": {
+                "input": {
+                  "type": "object",
+                  "required": [
+                    "network",
+                    "tx_hash"
+                  ],
+                  "properties": {
+                    "network": {
+                      "type": "string",
+                      "enum": [
+                        "1",
+                        "8453",
+                        "84532"
+                      ]
+                    },
+                    "tx_hash": {
+                      "type": "string",
+                      "pattern": "^0x[a-fA-F0-9]{64}$"
+                    }
+                  }
+                },
+                "output": {
+                  "$ref": "#/components/schemas/FetchedTxData"
+                }
+              }
+            }
+          }
+        },
         "requestBody": {
           "required": true,
           "content": {

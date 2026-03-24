@@ -77,8 +77,8 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     // Keep `/health` outside rate limits, load shed, and body limits so Fly
     // `http_service.checks` (and k8s-style probes) always get 200 from a cheap handler.
     let paid_api = tx_routes()
-        .layer(x402)
         .layer(middleware::map_response(mirror_payment_required_into_body))
+        .layer(x402)
         .layer(cors(config.cors_origin))
         .layer(middleware_stack);
 

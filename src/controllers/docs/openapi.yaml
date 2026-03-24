@@ -63,6 +63,26 @@ paths:
                     pattern: "^0x[a-fA-F0-9]{64}$"
               output:
                 $ref: "#/components/schemas/FetchedTxData"
+      x-schema:
+        input:
+          type: object
+          required: [network, tx_hash]
+          properties:
+            network:
+              type: string
+              enum: ["1", "8453", "84532"]
+            tx_hash:
+              type: string
+              pattern: "^0x[a-fA-F0-9]{64}$"
+        output:
+          type: object
+          properties:
+            schema_version:
+              type: string
+            tx_hash:
+              type: string
+            data:
+              type: object
       requestBody:
         required: true
         content:

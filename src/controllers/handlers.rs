@@ -6,16 +6,31 @@ use axum::Json;
 use axum::extract::Path;
 use axum::response::IntoResponse;
 use http::{StatusCode, header};
+use serde::Deserialize;
 use serde_json::{Value, json};
 
 pub async fn fetcher(
     Path((network, tx_hash)): Path<(String, String)>,
 ) -> Result<impl IntoResponse, ApiError> {
+    fetch_summary(network, tx_hash).await
+}
+
+#[derive(Deserialize)]
+pub struct SummaryRequest {
+    pub network: String,
+    pub tx_hash: String,
+}
+
+pub async fn fetcher_body(Json(req): Json<SummaryRequest>) -> Result<impl IntoResponse, ApiError> {
+    fetch_summary(req.network, req.tx_hash).await
+}
+
+async fn fetch_summary(network: String, tx_hash: String) -> Result<impl IntoResponse, ApiError> {
     validate(&network, &tx_hash)?;
 
     let rpc_url = get_rpc_url(&network).unwrap();
 
-    let result = tx_fetcher(&rpc_url.as_str(), tx_hash.as_str()).await;
+    let result = tx_fetcher(&rpc_url.as_str(), &tx_hash).await;
     match result {
         Ok(Some(tx)) => match get_tx_data(&tx, &tx_hash).await {
             Ok(tx_data) => {
@@ -70,6 +85,6 @@ pub async fn openapi_yaml() -> impl IntoResponse {
 pub async fn x402_well_known() -> impl IntoResponse {
     Json(json!({
         "version": 1,
-        "resources": ["POST /summary/{network}/{tx_hash}"]
+        "resources": ["POST /summary"]
     }))
 }

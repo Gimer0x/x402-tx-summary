@@ -27,7 +27,7 @@ tags:
   - name: Summary
 
 paths:
-  /summary/{network}/{tx_hash}:
+  /summary:
     post:
       tags: [Summary]
       summary: Decode transaction into semantic intent
@@ -47,42 +47,21 @@ paths:
         price: "0.001"
         assetSymbol: "USDC"
         assetDecimals: 6
-      parameters:
-        - name: network
-          in: path
-          required: true
-          description: Numeric EVM chain id.
-          schema:
-            type: string
-            enum: ["1", "8453", "84532"]
-            examples:
-              ethereum:
-                value: "1"
-              base:
-                value: "8453"
-              baseSepolia:
-                value: "84532"
-        - name: tx_hash
-          in: path
-          required: true
-          description: 0x-prefixed 32-byte transaction hash.
-          schema:
-            type: string
-            pattern: "^0x[a-fA-F0-9]{64}$"
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [network, tx_hash]
               properties:
                 network:
                   type: string
-                  description: Same value as path parameter (for agent tooling compatibility).
+                  description: Numeric EVM chain id.
                   enum: ["1", "8453", "84532"]
                 tx_hash:
                   type: string
-                  description: Same value as path parameter (for agent tooling compatibility).
+                  description: 0x-prefixed 32-byte transaction hash.
                   pattern: "^0x[a-fA-F0-9]{64}$"
             examples:
               baseMainnet:
@@ -128,7 +107,7 @@ paths:
                         mimeType: null
                         network: base
                         payTo: "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3"
-                        resource: "https://api.dappdojo.com/summary/8453/0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1"
+                        resource: "https://api.dappdojo.com/summary"
                         scheme: exact
                     error: "Verification failed: address_not_registered"
                     x402Version: 1

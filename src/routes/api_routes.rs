@@ -1,9 +1,11 @@
 use axum::{Router, routing::{get, post}};
 
-use crate::controllers::handlers::{fetcher, openapi_json, openapi_yaml, x402_well_known};
+use crate::controllers::handlers::{fetcher, fetcher_body, openapi_json, openapi_yaml, x402_well_known};
 
 pub fn tx_routes() -> Router {
-    Router::new().route("/summary/{network}/{tx_hash}", post(fetcher))
+    Router::new()
+        .route("/summary", post(fetcher_body))
+        .route("/summary/{network}/{tx_hash}", post(fetcher))
 }
 
 pub fn openapi_routes() -> Router {

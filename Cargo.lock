@@ -918,6 +918,7 @@ dependencies = [
  "alloy-json-abi",
  "alloy-primitives",
  "axum",
+ "base64",
  "dotenvy",
  "eyre",
  "http",

@@ -1,5 +1,13 @@
 use alloy_primitives::Address;
-use axum::{BoxError, Router, error_handling::HandleErrorLayer, http::StatusCode};
+use axum::{
+    BoxError, Router,
+    body::Body,
+    error_handling::HandleErrorLayer,
+    http::{StatusCode, header},
+    middleware,
+    response::Response,
+};
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD};
 use std::time::Duration;
 use tower::{ServiceBuilder, limit::concurrency::ConcurrencyLimitLayer, load_shed::LoadShedLayer};
 use tower_governor::{
@@ -70,6 +78,7 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     // `http_service.checks` (and k8s-style probes) always get 200 from a cheap handler.
     let paid_api = tx_routes()
         .layer(x402)
+        .layer(middleware::map_response(mirror_payment_required_into_body))
         .layer(cors(config.cors_origin))
         .layer(middleware_stack);
 
@@ -92,4 +101,36 @@ fn cors(domain: String) -> CorsLayer {
         .allow_origin(allow_origin) // restrict in prod
         .allow_methods([Method::GET, Method::POST])
         .allow_headers(Any)
+}
+
+async fn mirror_payment_required_into_body(mut res: Response) -> Response {
+    if res.status() != StatusCode::PAYMENT_REQUIRED {
+        return res;
+    }
+
+    // x402 v2 may return a base64 JSON challenge in `Payment-Required` header with empty body.
+    let Some(payment_required) = res
+        .headers()
+        .get("payment-required")
+        .and_then(|h| h.to_str().ok())
+    else {
+        return res;
+    };
+
+    // Keep existing behavior if the payload cannot be decoded/validated.
+    let Ok(decoded) = BASE64_STANDARD.decode(payment_required) else {
+        return res;
+    };
+    if serde_json::from_slice::<serde_json::Value>(&decoded).is_err() {
+        return res;
+    }
+
+    res.headers_mut().insert(
+        header::CONTENT_TYPE,
+        header::HeaderValue::from_static("application/json"),
+    );
+    // Content-Length is now stale (`0` on header-only responses), remove it.
+    res.headers_mut().remove(header::CONTENT_LENGTH);
+    *res.body_mut() = Body::from(decoded);
+    res
 }

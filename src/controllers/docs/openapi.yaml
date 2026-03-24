@@ -37,8 +37,6 @@ paths:
         This route is protected by x402 middleware and may return `402 Payment Required`
         until a valid payment header is provided.
       operationId: postSummary
-      security:
-        - PaymentSignatureHeader: []
       x-payment-info:
         protocols: ["x402"]
         pricingMode: fixed

@@ -30,13 +30,6 @@
         "summary": "Decode transaction into semantic intent",
         "description": "Decodes a transaction from the specified network into a normalized semantic structure.\n\nThis route is protected by x402 middleware and may return `402 Payment Required`\nuntil a valid payment header is provided.\n",
         "operationId": "postSummary",
-        "security": [
-          {
-            "PaymentSignatureHeader": [
-
-            ]
-          }
-        ],
         "x-payment-info": {
           "protocols": [
             "x402"

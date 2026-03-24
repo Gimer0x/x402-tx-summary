@@ -7,6 +7,7 @@ pub struct Config {
     pub receiver_address: String,
     pub request_price: f64,
     pub cors_origin: String,
+    pub x402_public_base_url: Option<String>,
 }
 
 impl Config {
@@ -21,6 +22,9 @@ impl Config {
                 .map_err(|e| eyre::eyre!("REQUEST_PRICE missing: {e}"))?
                 .parse()?,
             cors_origin: var("CORS_ORIGIN").unwrap_or_else(|_| "https://dappdojo.com".to_string()),
+            x402_public_base_url: var("X402_PUBLIC_BASE_URL")
+                .ok()
+                .filter(|v| !v.trim().is_empty()),
         })
     }
 }

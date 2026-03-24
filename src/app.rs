@@ -11,6 +11,7 @@ use tower_http::{
     timeout::TimeoutLayer,
     trace::TraceLayer,
 };
+use url::Url;
 use x402_axum::X402Middleware;
 use x402_chain_eip155::{KnownNetworkEip155, V2Eip155Exact};
 use x402_types::networks::USDC;
@@ -51,7 +52,13 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let receiver_address: Address = config.receiver_address.parse().unwrap();
     let price: f64 = config.request_price;
 
-    let x402 = X402Middleware::new(&config.facilitator_url)
+    let mut x402_mw = X402Middleware::new(&config.facilitator_url);
+
+    if let Some(base) = &config.x402_public_base_url {
+        x402_mw = x402_mw.with_base_url(Url::parse(base)?);
+    }
+
+    let x402 = x402_mw
         .with_price_tag(V2Eip155Exact::price_tag(
             receiver_address,
             USDC::base().parse(price).unwrap(),

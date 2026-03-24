@@ -8,12 +8,12 @@
   },
   "servers": [
     {
-      "url": "https://x402-tx-summary.fly.dev",
-      "description": "Fly deployment"
-    },
-    {
       "url": "https://api.dappdojo.com",
       "description": "Custom domain (optional)"
+    },
+    {
+      "url": "https://x402-tx-summary.fly.dev",
+      "description": "Fly deployment"
     }
   ],
   "tags": [

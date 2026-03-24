@@ -2,8 +2,9 @@ use std::sync::Arc;
 use alloy_signer_local::PrivateKeySigner;
 use reqwest::Client;
 use x402_reqwest::{ReqwestWithPayments, ReqwestWithPaymentsBuild, X402Client};
-use x402_chain_eip155::V1Eip155ExactClient;
+use x402_chain_eip155::V2Eip155ExactClient;
 use dotenvy::var;
+use serde_json::json;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -21,30 +22,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .expect("Invalid EVM private key"),
     );
 
-    let x402_client = X402Client::new().register(V1Eip155ExactClient::new(signer));
+    let x402_client = X402Client::new().register(V2Eip155ExactClient::new(signer));
 
     let http_client = Client::new()
         .with_payments(x402_client)
         .build();
 
-    let network = std::env::args()
-        .nth(1)
-        .unwrap_or_else(|| "mainnet".into());
+    let network = std::env::args().nth(1).unwrap_or_else(|| "8453".into());
 
     let transaction_hash = std::env::args()
         .nth(2)
         .unwrap_or_else(|| "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdff".into());
-    // Your protected URL with transaction_hash in the path
-    let hostname = var("SERVER_HOST").expect("Set HOSTNAME");
-    let url = format!(
-        "https://{hostname}/summary/{}/{}",
-        network,
-        transaction_hash
-    );
+    let hostname = var("SERVER_HOST").expect("Set SERVER_HOST");
+    let url = format!("https://{hostname}/summary");
 
     println!("URL: {}", url);
 
-    let response = http_client.post(&url).send().await?;
+    let response = http_client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .body(
+            json!({
+                "network": network,
+                "tx_hash": transaction_hash
+            })
+            .to_string(),
+        )
+        .send()
+        .await?;
     
     println!("Status: {}", response.status());
     println!("Body: {}", response.text().await?);

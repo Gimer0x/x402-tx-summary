@@ -12,7 +12,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 use x402_axum::X402Middleware;
-use x402_chain_eip155::{KnownNetworkEip155, V1Eip155Exact};
+use x402_chain_eip155::{KnownNetworkEip155, V2Eip155Exact};
 use x402_types::networks::USDC;
 
 use crate::{
@@ -52,7 +52,7 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let price: f64 = config.request_price;
 
     let x402 = X402Middleware::new(&config.facilitator_url)
-        .with_price_tag(V1Eip155Exact::price_tag(
+        .with_price_tag(V2Eip155Exact::price_tag(
             receiver_address,
             USDC::base().parse(price).unwrap(),
         ))

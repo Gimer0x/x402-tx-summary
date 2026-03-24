@@ -1,10 +1,10 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "x402 Transaction Summary API",
+    "title": "x402 Semantic Transaction Summary API",
     "version": "0.1.0",
-    "description": "Semantic blockchain transaction decoder protected by x402 pay-per-call middleware.\n\nMain flow:\n1. Client calls `POST /summary/{network}/{tx_hash}`.\n2. If unpaid, API returns `402 Payment Required` with accepted payment requirements.\n3. Client pays via x402 and retries.\n4. API returns semantic summary JSON.\n",
-    "guidance": "Use `POST /summary/{network}/{tx_hash}` to decode EVM transactions.\nTreat this as a paid endpoint via x402:\n- First call may return 402 Payment Required.\n- Pay using x402 (header `X-Payment`) and retry the same URL.\n- Prefer public HTTPS origin (e.g. api.dappdojo.com) so resource URLs are consistent.\n"
+    "description": "Semantic blockchain transaction decoder protected by x402 pay-per-call middleware.\n\nMain flow:\n1. Client calls `POST /summary` with JSON body `{ network, tx_hash }`.\n2. If unpaid, API returns `402 Payment Required` with accepted payment requirements.\n3. Client pays via x402 and retries.\n4. API returns semantic summary JSON.\n",
+    "guidance": "Use `POST /summary` with JSON body `{ network, tx_hash }` to decode EVM transactions.\nTreat this as a paid endpoint via x402:\n- First call may return 402 Payment Required.\n- Pay using x402 (v2 header `Payment-Signature` or an x402 SDK) and retry the same URL.\n- Prefer public HTTPS origin (e.g. api.dappdojo.com) so resource URLs are consistent.\n"
   },
   "servers": [
     {
@@ -32,7 +32,7 @@
         "operationId": "postSummary",
         "security": [
           {
-            "XPaymentHeader": [
+            "PaymentSignatureHeader": [
 
             ]
           }
@@ -118,31 +118,33 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/X402PaymentRequiredV1"
+                  "$ref": "#/components/schemas/X402PaymentRequiredV2"
                 },
                 "examples": {
                   "baseUsdc": {
                     "value": {
+                      "resource": {
+                        "url": "https://api.dappdojo.com/summary",
+                        "description": "Semantic transaction decode result",
+                        "mimeType": "application/json"
+                      },
                       "accepts": [
                         {
+                          "scheme": "exact",
+                          "network": "eip155:8453",
+                          "amount": "1000",
+                          "payTo": "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3",
+                          "maxTimeoutSeconds": 300,
                           "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-                          "description": "",
                           "extra": {
                             "assetTransferMethod": "eip3009",
                             "name": "USD Coin",
                             "version": "2"
-                          },
-                          "maxAmountRequired": "1000",
-                          "maxTimeoutSeconds": 300,
-                          "mimeType": null,
-                          "network": "base",
-                          "payTo": "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3",
-                          "resource": "https://api.dappdojo.com/summary",
-                          "scheme": "exact"
+                          }
                         }
                       ],
                       "error": "Verification failed: address_not_registered",
-                      "x402Version": 1
+                      "x402Version": 2
                     }
                   }
                 }
@@ -176,11 +178,11 @@
   },
   "components": {
     "securitySchemes": {
-      "XPaymentHeader": {
+      "PaymentSignatureHeader": {
         "type": "apiKey",
         "in": "header",
-        "name": "X-Payment",
-        "description": "x402 payment payload header used for paid retry requests.\nClients usually generate this automatically using an x402-aware SDK.\n"
+        "name": "Payment-Signature",
+        "description": "x402 v2 payment payload header used for paid retry requests.\nClients usually generate this automatically using an x402-aware SDK.\n"
       }
     },
     "schemas": {
@@ -495,17 +497,18 @@
           }
         }
       },
-      "X402PaymentRequiredV1": {
+      "X402PaymentRequiredV2": {
         "type": "object",
         "required": [
           "accepts",
-          "x402Version"
+          "x402Version",
+          "resource"
         ],
         "properties": {
           "accepts": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/X402AcceptV1"
+              "$ref": "#/components/schemas/X402AcceptV2"
             }
           },
           "error": {
@@ -515,20 +518,22 @@
           "x402Version": {
             "type": "integer",
             "enum": [
-              1
+              2
             ]
+          },
+          "resource": {
+            "$ref": "#/components/schemas/X402ResourceInfo"
           }
         }
       },
-      "X402AcceptV1": {
+      "X402AcceptV2": {
         "type": "object",
         "required": [
           "scheme",
           "payTo",
           "asset",
           "network",
-          "maxAmountRequired",
-          "resource",
+          "amount",
           "maxTimeoutSeconds"
         ],
         "properties": {
@@ -546,13 +551,30 @@
           },
           "network": {
             "type": "string",
-            "example": "base"
+            "example": "eip155:8453"
           },
-          "maxAmountRequired": {
+          "amount": {
             "type": "string",
             "example": "1000"
           },
-          "resource": {
+          "maxTimeoutSeconds": {
+            "type": "integer",
+            "format": "uint32",
+            "example": 300
+          },
+          "extra": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "X402ResourceInfo": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
             "type": "string",
             "format": "uri"
           },
@@ -563,15 +585,6 @@
           "mimeType": {
             "type": "string",
             "nullable": true
-          },
-          "maxTimeoutSeconds": {
-            "type": "integer",
-            "format": "uint32",
-            "example": 300
-          },
-          "extra": {
-            "type": "object",
-            "additionalProperties": true
           }
         }
       }

@@ -1,20 +1,20 @@
 openapi: 3.1.0
 info:
-  title: x402 Transaction Summary API
+  title: x402 Semantic Transaction Summary API
   version: 0.1.0
   description: |
     Semantic blockchain transaction decoder protected by x402 pay-per-call middleware.
 
     Main flow:
-    1. Client calls `POST /summary/{network}/{tx_hash}`.
+    1. Client calls `POST /summary` with JSON body `{ network, tx_hash }`.
     2. If unpaid, API returns `402 Payment Required` with accepted payment requirements.
     3. Client pays via x402 and retries.
     4. API returns semantic summary JSON.
   guidance: |
-    Use `POST /summary/{network}/{tx_hash}` to decode EVM transactions.
+    Use `POST /summary` with JSON body `{ network, tx_hash }` to decode EVM transactions.
     Treat this as a paid endpoint via x402:
     - First call may return 402 Payment Required.
-    - Pay using x402 (header `X-Payment`) and retry the same URL.
+    - Pay using x402 (v2 header `Payment-Signature` or an x402 SDK) and retry the same URL.
     - Prefer public HTTPS origin (e.g. api.dappdojo.com) so resource URLs are consistent.
 
 servers:
@@ -38,7 +38,7 @@ paths:
         until a valid payment header is provided.
       operationId: postSummary
       security:
-        - XPaymentHeader: []
+        - PaymentSignatureHeader: []
       x-payment-info:
         protocols: ["x402"]
         pricingMode: fixed
@@ -91,26 +91,27 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/X402PaymentRequiredV1"
+                $ref: "#/components/schemas/X402PaymentRequiredV2"
               examples:
                 baseUsdc:
                   value:
+                    resource:
+                      url: "https://api.dappdojo.com/summary"
+                      description: "Semantic transaction decode result"
+                      mimeType: "application/json"
                     accepts:
-                      - asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-                        description: ""
+                      - scheme: exact
+                        network: "eip155:8453"
+                        amount: "1000"
+                        payTo: "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3"
+                        maxTimeoutSeconds: 300
+                        asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
                         extra:
                           assetTransferMethod: eip3009
                           name: USD Coin
                           version: "2"
-                        maxAmountRequired: "1000"
-                        maxTimeoutSeconds: 300
-                        mimeType: null
-                        network: base
-                        payTo: "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3"
-                        resource: "https://api.dappdojo.com/summary"
-                        scheme: exact
                     error: "Verification failed: address_not_registered"
-                    x402Version: 1
+                    x402Version: 2
         "404":
           description: Transaction not found
           content:
@@ -127,12 +128,12 @@ paths:
 
 components:
   securitySchemes:
-    XPaymentHeader:
+    PaymentSignatureHeader:
       type: apiKey
       in: header
-      name: X-Payment
+      name: Payment-Signature
       description: |
-        x402 payment payload header used for paid retry requests.
+        x402 v2 payment payload header used for paid retry requests.
         Clients usually generate this automatically using an x402-aware SDK.
 
   schemas:
@@ -342,30 +343,31 @@ components:
           nullable: true
           example: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2"
 
-    X402PaymentRequiredV1:
+    X402PaymentRequiredV2:
       type: object
-      required: [accepts, x402Version]
+      required: [accepts, x402Version, resource]
       properties:
         accepts:
           type: array
           items:
-            $ref: "#/components/schemas/X402AcceptV1"
+            $ref: "#/components/schemas/X402AcceptV2"
         error:
           type: string
           nullable: true
         x402Version:
           type: integer
-          enum: [1]
+          enum: [2]
+        resource:
+          $ref: "#/components/schemas/X402ResourceInfo"
 
-    X402AcceptV1:
+    X402AcceptV2:
       type: object
       required:
         - scheme
         - payTo
         - asset
         - network
-        - maxAmountRequired
-        - resource
+        - amount
         - maxTimeoutSeconds
       properties:
         scheme:
@@ -379,11 +381,23 @@ components:
           example: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
         network:
           type: string
-          example: base
-        maxAmountRequired:
+          example: "eip155:8453"
+        amount:
           type: string
           example: "1000"
-        resource:
+        maxTimeoutSeconds:
+          type: integer
+          format: uint32
+          example: 300
+        extra:
+          type: object
+          additionalProperties: true
+
+    X402ResourceInfo:
+      type: object
+      required: [url]
+      properties:
+        url:
           type: string
           format: uri
         description:
@@ -392,10 +406,3 @@ components:
         mimeType:
           type: string
           nullable: true
-        maxTimeoutSeconds:
-          type: integer
-          format: uint32
-          example: 300
-        extra:
-          type: object
-          additionalProperties: true

@@ -22,8 +22,9 @@ use crate::{
 
 pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let governor_config = GovernorConfigBuilder::default()
-        .per_second(2)
-        .burst_size(5)
+        // Slightly relaxed limits to avoid false 429s during automated discovery probes.
+        .per_second(10)
+        .burst_size(30)
         .key_extractor(SmartIpKeyExtractor)
         .use_headers()
         .finish()
@@ -50,9 +51,13 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let receiver_address: Address = config.receiver_address.parse().unwrap();
     let price: f64 = config.request_price;
 
-    let x402 = X402Middleware::new(&config.facilitator_url).with_price_tag(
-        V1Eip155Exact::price_tag(receiver_address, USDC::base().parse(price).unwrap()),
-    );
+    let x402 = X402Middleware::new(&config.facilitator_url)
+        .with_price_tag(V1Eip155Exact::price_tag(
+            receiver_address,
+            USDC::base().parse(price).unwrap(),
+        ))
+        .with_description("Semantic transaction decode result".to_string())
+        .with_mime_type("application/json".to_string());
 
     // Keep `/health` outside rate limits, load shed, and body limits so Fly
     // `http_service.checks` (and k8s-style probes) always get 200 from a cheap handler.

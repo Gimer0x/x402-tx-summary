@@ -1,0 +1,65 @@
+{
+  "body": {
+    "block_hash": "0x463dfca5bfc605254f6fbda450f91b18caf31b86f05bb5a39df69db3a1246034",
+    "block_number": 43455688,
+    "data": {
+      "actions": [
+        {
+          "assets_in": [
+            {
+              "amount": "0.000022",
+              "decimals": 6,
+              "name": "Tether USD",
+              "raw_amount": "22",
+              "symbol": "USDT",
+              "token_address": "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2"
+            }
+          ],
+          "assets_out": [],
+          "direction": "outgoing",
+          "function": {
+            "name": "transfer",
+            "selector": "0xa9059cbb"
+          },
+          "intent": "send_money",
+          "participants": {
+            "receiver": "0x972654E14a83e2f9615E7d489f8c3E691757Edd4",
+            "sender": "0x2575ec8a07Dcc2f9e10Fcd76f331a068a0d5d728"
+          },
+          "protocol": null,
+          "subtype": "erc20",
+          "summary": "Sent 0.000022 USDT from 0x2575ec8a07Dcc2f9e10Fcd76f331a068a0d5d728 to 0x972654E14a83e2f9615E7d489f8c3E691757Edd4",
+          "type": "transfer"
+        }
+      ],
+      "chain": {
+        "chain_id": 8453,
+        "name": "Base",
+        "native_asset": {
+          "decimals": 18,
+          "symbol": "ETH"
+        }
+      },
+      "gas": {
+        "effective_gas_price": 5159973,
+        "limit": 34718,
+        "max_fee_eth": 2.187234e-7,
+        "max_fee_wei": 218723400000,
+        "price": 6300000
+      },
+      "nonce": 0,
+      "to": "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2",
+      "tx_type": "eip1559"
+    },
+    "labels": [
+      "erc20",
+      "transfer",
+      "stablecoin"
+    ],
+    "schema_version": "0.1.0",
+    "signer": "0x2575ec8a07Dcc2f9e10Fcd76f331a068a0d5d728",
+    "transaction_index": 125,
+    "tx_hash": "0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f"
+  },
+  "url": "https://valery-hemoid-lyman.ngrok-free.dev/summary"
+}

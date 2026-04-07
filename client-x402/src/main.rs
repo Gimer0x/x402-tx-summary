@@ -28,31 +28,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_payments(x402_client)
         .build();
 
-    let network = std::env::args().nth(1).unwrap_or_else(|| "8453".into());
+    let network = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "8453".into());
 
     let transaction_hash = std::env::args()
         .nth(2)
         .unwrap_or_else(|| "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdff".into());
+
     let hostname = var("SERVER_HOST").expect("Set SERVER_HOST");
     let url = format!("https://{hostname}/summary");
 
     println!("URL: {}", url);
 
+    let request_body = json!({
+        "network": network,
+        "tx_hash": transaction_hash
+    })
+    .to_string();
+
     let response = http_client
         .post(&url)
         .header("Content-Type", "application/json")
-        .body(
-            json!({
-                "network": network,
-                "tx_hash": transaction_hash
-            })
-            .to_string(),
-        )
+        .body(request_body)
         .send()
         .await?;
-    
-    println!("Status: {}", response.status());
-    println!("Body: {}", response.text().await?);
-    
+
+    println!("Response: {:?}", response);
+
+    let status = response.status().as_u16();
+    let body_text = response.text().await?;
+
+    // If the response body is valid JSON, embed it as JSON; otherwise store it as a string.
+    let body_value = serde_json::from_str::<serde_json::Value>(&body_text).ok();
+    let result = match body_value {
+        Some(value) => json!({  
+            "body": value,
+            "url": url,
+        }),
+        None => json!({"body": body_text, "url": url}),
+    };
+
+    let out_path = format!("./result.json");
+    let result_json = serde_json::to_string_pretty(&result)?;
+    std::fs::write(&out_path, result_json)?;
+
+    println!("Status: {}", status);
+    println!("Wrote response to {}", out_path);
+
     Ok(())
 }

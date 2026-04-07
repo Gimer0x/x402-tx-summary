@@ -66,10 +66,11 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
         x402_mw = x402_mw.with_base_url(Url::parse(base)?);
     }
 
+    // Note: we are using Base Sepolia for the x402 price tag.
     let x402 = x402_mw
         .with_price_tag(V2Eip155Exact::price_tag(
             receiver_address,
-            USDC::base().parse(price).unwrap(),
+            USDC::base_sepolia().parse(price).unwrap(),
         ))
         .with_description("Semantic transaction decode result".to_string())
         .with_mime_type("application/json".to_string());
@@ -103,6 +104,7 @@ fn cors(domain: String) -> CorsLayer {
         .allow_headers(Any)
 }
 
+// Check this function
 async fn mirror_payment_required_into_body(mut res: Response) -> Response {
     if res.status() != StatusCode::PAYMENT_REQUIRED {
         return res;

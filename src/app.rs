@@ -72,7 +72,7 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let x402 = x402_mw
         .with_price_tag(V2Eip155Exact::price_tag(
             receiver_address,
-            USDC::base_sepolia()
+            USDC::base()
                 .parse(price)
                 .map_err(|e| eyre::eyre!("Invalid price: {}", e))?,
         ))

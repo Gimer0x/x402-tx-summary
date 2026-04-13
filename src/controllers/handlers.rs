@@ -3,8 +3,9 @@ use crate::services::tx_data::get_tx_data;
 use crate::services::tx_fetcher::tx_fetcher;
 use crate::utils::{blockchain::get_chain_info, tools::get_rpc_url};
 use axum::Json;
+use axum::body::Body;
 use axum::extract::Path;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use http::{StatusCode, header};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -87,4 +88,19 @@ pub async fn x402_well_known() -> impl IntoResponse {
         "version": 1,
         "resources": ["POST /summary"]
     }))
+}
+
+const FAVICON_PNG: &[u8] = include_bytes!("../../assets/favicon.png");
+
+pub async fn favicon_get() -> impl IntoResponse {
+    ([(header::CONTENT_TYPE, "image/png")], FAVICON_PNG)
+}
+
+/// Discovery tools issue `HEAD /favicon.ico` and require `Content-Type: image/*`.
+pub async fn favicon_head() -> Response {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "image/png")
+        .body(Body::empty())
+        .expect("valid response")
 }

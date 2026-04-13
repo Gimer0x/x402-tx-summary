@@ -31,13 +31,16 @@
         "description": "Decodes a transaction from the specified network into a normalized semantic structure.\n\nThis route is protected by x402 middleware and may return `402 Payment Required`\nuntil a valid payment header is provided.\n",
         "operationId": "postSummary",
         "x-payment-info": {
+          "price": {
+            "mode": "fixed",
+            "amount": "0.001",
+            "currency": "USD"
+          },
           "protocols": [
-            "x402"
-          ],
-          "pricingMode": "fixed",
-          "price": "0.001",
-          "assetSymbol": "USDC",
-          "assetDecimals": 6
+            {
+              "x402": {}
+            }
+          ]
         },
         "extensions": {
           "bazaar": {

@@ -38,13 +38,13 @@ paths:
         until a valid payment header is provided.
       operationId: postSummary
       x-payment-info:
-        protocols: ["x402"]
-        pricingMode: fixed
-        # Human-readable USDC amount for discovery/listing UIs.
-        # Runtime x402 `accepts.maxAmountRequired` remains in token base units (1000 = 0.001 USDC).
-        price: "0.001"
-        assetSymbol: "USDC"
-        assetDecimals: 6
+        # Discovery/listing (USD). Runtime x402 `accepts` still use USDC base units on-chain.
+        price:
+          mode: fixed
+          amount: "0.001"
+          currency: USD
+        protocols:
+          - x402: {}
       extensions:
         bazaar:
           schema:

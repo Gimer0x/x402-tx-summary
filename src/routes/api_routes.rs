@@ -1,6 +1,8 @@
 use axum::{Router, routing::{get, post}};
 
-use crate::controllers::handlers::{fetcher, fetcher_body, openapi_json, openapi_yaml, x402_well_known};
+use crate::controllers::handlers::{
+    favicon_get, favicon_head, fetcher, fetcher_body, openapi_json, openapi_yaml, x402_well_known,
+};
 
 pub fn tx_routes() -> Router {
     Router::new()
@@ -16,5 +18,7 @@ pub fn openapi_routes() -> Router {
 }
 
 pub fn ok_route() -> Router {
-    Router::new().route("/health", get(|| async { "ok" }))
+    Router::new()
+        .route("/health", get(|| async { "ok" }))
+        .route("/favicon.ico", get(favicon_get).head(favicon_head))
 }

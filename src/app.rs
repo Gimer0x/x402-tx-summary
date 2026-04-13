@@ -54,10 +54,12 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
         .layer(ConcurrencyLimitLayer::new(50))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
-            Duration::from_secs(10),
+            Duration::from_secs(20),
         ));
 
-    let receiver_address: Address = config.receiver_address.parse().unwrap();
+    let receiver_address: Address = config.receiver_address.parse()
+        .map_err(|e| eyre::eyre!("Invalid receiver address: {}", e))?;
+
     let price: f64 = config.request_price;
 
     let mut x402_mw = X402Middleware::new(&config.facilitator_url);
@@ -70,18 +72,20 @@ pub async fn build_app(config: Config) -> eyre::Result<Router> {
     let x402 = x402_mw
         .with_price_tag(V2Eip155Exact::price_tag(
             receiver_address,
-            USDC::base_sepolia().parse(price).unwrap(),
+            USDC::base_sepolia()
+                .parse(price)
+                .map_err(|e| eyre::eyre!("Invalid price: {}", e))?,
         ))
         .with_description("Semantic transaction decode result".to_string())
         .with_mime_type("application/json".to_string());
 
-    // Keep `/health` outside rate limits, load shed, and body limits so Fly
-    // `http_service.checks` (and k8s-style probes) always get 200 from a cheap handler.
+    // `map_response` must sit *outside* `X402Middleware`: unpaid requests get 402 from x402 without
+    // calling inner services, so an inner `map_response` would never run.
     let paid_api = tx_routes()
-        .layer(middleware::map_response(mirror_payment_required_into_body))
+        .layer(middleware_stack)
         .layer(x402)
-        .layer(cors(config.cors_origin))
-        .layer(middleware_stack);
+        .layer(middleware::map_response(mirror_payment_required_into_body))
+        .layer(cors(config.cors_origin));
 
     let app = Router::new()
         .merge(ok_route())
@@ -104,7 +108,102 @@ fn cors(domain: String) -> CorsLayer {
         .allow_headers(Any)
 }
 
-// Check this function
+/// x402scan / AgentCash discovery validates the **live** v2 `Payment-Required` JSON using the
+/// Bazaar extension shape: `extensions.bazaar.schema.properties.input.properties.body` (or
+/// `queryParams`) and `...output.properties.example`. The stock `x402-axum` challenge omits
+/// this, so resources register but fail strict checks and do not list in the UI.
+fn enrich_payment_required_for_x402scan(mut value: serde_json::Value) -> serde_json::Value {
+    if value.get("x402Version").and_then(|v| v.as_u64()) != Some(2) {
+        return value;
+    }
+    if bazaar_discovery_schema_present(&value) {
+        return value;
+    }
+
+    let bazaar = serde_json::json!({
+        "schema": {
+            "type": "object",
+            "properties": {
+                "input": {
+                    "type": "object",
+                    "properties": {
+                        "body": {
+                            "type": "object",
+                            "required": ["network", "tx_hash"],
+                            "properties": {
+                                "network": {
+                                    "type": "string",
+                                    "description": "Numeric EVM chain id.",
+                                    "enum": ["1", "8453", "84532"]
+                                },
+                                "tx_hash": {
+                                    "type": "string",
+                                    "description": "0x-prefixed 32-byte transaction hash.",
+                                    "pattern": "^0x[a-fA-F0-9]{64}$"
+                                }
+                            }
+                        }
+                    }
+                },
+                "output": {
+                    "type": "object",
+                    "properties": {
+                        "example": {
+                            "type": "object",
+                            "properties": {
+                                "schema_version": { "type": "string" },
+                                "tx_hash": { "type": "string" },
+                                "data": { "type": "object" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    let Some(obj) = value.as_object_mut() else {
+        return value;
+    };
+    let ext = obj
+        .entry("extensions")
+        .or_insert_with(|| serde_json::json!({}));
+    if let Some(ext_obj) = ext.as_object_mut() {
+        ext_obj.insert("bazaar".to_string(), bazaar);
+    }
+    value
+}
+
+fn bazaar_discovery_schema_present(value: &serde_json::Value) -> bool {
+    let Some(ext) = value.get("extensions") else {
+        return false;
+    };
+    let Some(bazaar) = ext.get("bazaar") else {
+        return false;
+    };
+    let Some(schema) = bazaar.get("schema") else {
+        return false;
+    };
+    let Some(props) = schema.get("properties") else {
+        return false;
+    };
+    let Some(input) = props.get("input") else {
+        return false;
+    };
+    let Some(input_props) = input.get("properties") else {
+        return false;
+    };
+    let has_input = input_props.get("body").is_some() || input_props.get("queryParams").is_some();
+    let Some(output) = props.get("output") else {
+        return false;
+    };
+    let Some(output_props) = output.get("properties") else {
+        return false;
+    };
+    let has_example = output_props.get("example").is_some();
+    has_input && has_example
+}
+
 async fn mirror_payment_required_into_body(mut res: Response) -> Response {
     if res.status() != StatusCode::PAYMENT_REQUIRED {
         return res;
@@ -115,24 +214,33 @@ async fn mirror_payment_required_into_body(mut res: Response) -> Response {
         .headers()
         .get("payment-required")
         .and_then(|h| h.to_str().ok())
+        .map(str::to_owned)
     else {
         return res;
     };
 
-    // Keep existing behavior if the payload cannot be decoded/validated.
-    let Ok(decoded) = BASE64_STANDARD.decode(payment_required) else {
+    let Ok(decoded) = BASE64_STANDARD.decode(payment_required.as_bytes()) else {
         return res;
     };
-    if serde_json::from_slice::<serde_json::Value>(&decoded).is_err() {
+    let Ok(mut payload) = serde_json::from_slice::<serde_json::Value>(&decoded) else {
         return res;
+    };
+
+    payload = enrich_payment_required_for_x402scan(payload);
+
+    let Ok(encoded_vec) = serde_json::to_vec(&payload) else {
+        return res;
+    };
+    let encoded = BASE64_STANDARD.encode(&encoded_vec);
+    if let Ok(hv) = header::HeaderValue::from_str(&encoded) {
+        res.headers_mut().insert("payment-required", hv);
     }
 
     res.headers_mut().insert(
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/json"),
     );
-    // Content-Length is now stale (`0` on header-only responses), remove it.
     res.headers_mut().remove(header::CONTENT_LENGTH);
-    *res.body_mut() = Body::from(decoded);
+    *res.body_mut() = Body::from(encoded_vec);
     res
 }

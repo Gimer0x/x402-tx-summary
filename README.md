@@ -22,13 +22,14 @@ Note: Currently, only USDT transfers are supported on Ethereum and Base. Other t
 
 ## API
 
-OpenAPI definition: **[`docs/openapi.yaml`](docs/openapi.yaml)**
+OpenAPI definition: **[`src/controllers/docs/openapi.yaml`](src/controllers/docs/openapi.yaml)**
 
-### Endpoint
+### Endpoints
 
-`POST /summary/{network}/{tx_hash}`
+- `GET /summary?network={chainId}&tx_hash={0x…}` — query parameters  
+- `GET /summary/{network}/{tx_hash}` — same decode, path parameters  
 
-The server route is defined in `src/main.rs`.
+Routes are defined in [`src/routes/api_routes.rs`](src/routes/api_routes.rs); handlers in [`src/controllers/handlers.rs`](src/controllers/handlers.rs).
 
 #### Path parameters
 
@@ -46,11 +47,17 @@ To run the client define the .env variables `EVM_PRIVATE_KEY` and `SERVER_HOST`.
 cargo run -q 8453 0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f
 ```
 
-This is an example of the API call:
+Examples (browser or `curl`; unpaid calls return **402** until x402 payment):
+
 ```bash
-https://api.dappdojo.com/summary/8453/0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1
+curl -sS "https://api.dappdojo.com/summary?network=8453&tx_hash=0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1" -i | head
 ```
-Note: If you execute this you are going to receive an error asking for a payment. Check the client example.
+
+```bash
+curl -sS "https://api.dappdojo.com/summary/8453/0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1" -i | head
+```
+
+Note: Without an x402-capable client (or `Payment-Signature`), you will get **402 Payment Required**. See `client-x402` for a paid example.
 
 ### Response shape
 
@@ -104,7 +111,7 @@ The server expects these variables:
 
 ### Deploy on Fly.io
 
-See **[docs/FLY_DEPLOY.md](docs/FLY_DEPLOY.md)** for `fly launch`, secrets, and verification.
+See **[src/controllers/docs/FLY_DEPLOY.md](src/controllers/docs/FLY_DEPLOY.md)** for `fly launch`, secrets, and verification.
 
 ## How the semantic layer works
 
@@ -126,7 +133,7 @@ Token name/symbol/decimals are currently **hardcoded for a small set of known to
 
 This server is wrapped with `X402Middleware`:
 
-- The middleware is configured in `src/main.rs`.
+- The middleware is configured in `src/app.rs`.
 - When the x402 client integrates with the protocol, calls can be billed/authorized at the x402 layer.
 
 For details on how to construct x402 tool/payment requests, refer to the x402 client/protocol documentation and your client SDK usage.
@@ -138,5 +145,5 @@ For details on how to construct x402 tool/payment requests, refer to the x402 cl
    - `cargo run`
 3. Expose it via your tunneling setup (ngrok, etc.).
 4. Call:
-   - `POST /summary/{network}/{tx_hash}`
+   - `GET /summary?network=…&tx_hash=…` or `GET /summary/{network}/{tx_hash}`
 

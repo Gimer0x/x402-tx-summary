@@ -3,8 +3,8 @@
   "info": {
     "title": "x402 Semantic Transaction Summary API",
     "version": "0.1.0",
-    "description": "Semantic blockchain transaction decoder protected by x402 pay-per-call middleware.\n\nMain flow:\n1. Client calls `POST /summary` with JSON body `{ network, tx_hash }`.\n2. If unpaid, API returns `402 Payment Required` with accepted payment requirements.\n3. Client pays via x402 and retries.\n4. API returns semantic summary JSON.\n",
-    "guidance": "Use `POST /summary` with JSON body `{ network, tx_hash }` to decode EVM transactions.\nTreat this as a paid endpoint via x402:\n- First call may return 402 Payment Required.\n- Pay using x402 (v2 header `Payment-Signature` or an x402 SDK) and retry the same URL.\n- Prefer public HTTPS origin (e.g. api.dappdojo.com) so resource URLs are consistent.\n"
+    "description": "Semantic blockchain transaction decoder protected by x402 pay-per-call middleware.\n\nMain flow:\n1. Client calls `GET /summary?network=&tx_hash=` or `GET /summary/{network}/{tx_hash}`.\n2. If unpaid, API returns `402 Payment Required` with accepted payment requirements.\n3. Client pays via x402 and retries.\n4. API returns semantic summary JSON.\n",
+    "guidance": "Use GET with query parameters or path parameters for `network` and `tx_hash`.\nTreat this as a paid endpoint via x402:\n- First call may return 402 Payment Required.\n- Pay using x402 (v2 header `Payment-Signature` or an x402 SDK) and retry the same URL.\n- Prefer public HTTPS origin (e.g. api.dappdojo.com) so resource URLs are consistent.\n"
   },
   "servers": [
     {
@@ -23,13 +23,13 @@
   ],
   "paths": {
     "/summary": {
-      "post": {
+      "get": {
         "tags": [
           "Summary"
         ],
-        "summary": "Decode transaction into semantic intent",
-        "description": "Decodes a transaction from the specified network into a normalized semantic structure.\n\nThis route is protected by x402 middleware and may return `402 Payment Required`\nuntil a valid payment header is provided.\n",
-        "operationId": "postSummary",
+        "summary": "Decode transaction into semantic intent (query parameters)",
+        "description": "Decodes a transaction from the specified network into a normalized semantic structure.\n\nQuery: `network` (chain id) and `tx_hash`. This route is protected by x402 middleware and may return `402 Payment Required`\nuntil a valid payment header is provided.\n",
+        "operationId": "getSummaryQuery",
         "x-payment-info": {
           "price": {
             "mode": "fixed",
@@ -50,7 +50,7 @@
                 "input": {
                   "type": "object",
                   "properties": {
-                    "body": {
+                    "queryParams": {
                       "type": "object",
                       "required": ["network", "tx_hash"],
                       "properties": {
@@ -122,44 +122,28 @@
             }
           }
         },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "network",
-                  "tx_hash"
-                ],
-                "properties": {
-                  "network": {
-                    "type": "string",
-                    "description": "Numeric EVM chain id.",
-                    "enum": [
-                      "1",
-                      "8453",
-                      "84532"
-                    ]
-                  },
-                  "tx_hash": {
-                    "type": "string",
-                    "description": "0x-prefixed 32-byte transaction hash.",
-                    "pattern": "^0x[a-fA-F0-9]{64}$"
-                  }
-                }
-              },
-              "examples": {
-                "baseMainnet": {
-                  "value": {
-                    "network": "8453",
-                    "tx_hash": "0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1"
-                  }
-                }
-              }
+        "parameters": [
+          {
+            "name": "network",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Numeric EVM chain id.",
+              "enum": ["1", "8453", "84532"]
+            }
+          },
+          {
+            "name": "tx_hash",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "0x-prefixed 32-byte transaction hash.",
+              "pattern": "^0x[a-fA-F0-9]{64}$"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "Decoded semantic transaction summary",
@@ -246,6 +230,177 @@
                   "type": "string"
                 }
               }
+            }
+          }
+        }
+      }
+    },
+    "/summary/{network}/{tx_hash}": {
+      "get": {
+        "tags": ["Summary"],
+        "summary": "Decode transaction into semantic intent (path parameters)",
+        "description": "Same as `GET /summary` but `network` and `tx_hash` are path segments. Protected by x402; may return `402 Payment Required` until paid.\n",
+        "operationId": "getSummaryPath",
+        "x-payment-info": {
+          "price": {
+            "mode": "fixed",
+            "amount": "0.001",
+            "currency": "USD"
+          },
+          "protocols": [{ "x402": {} }]
+        },
+        "extensions": {
+          "bazaar": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "input": {
+                  "type": "object",
+                  "properties": {
+                    "queryParams": {
+                      "type": "object",
+                      "required": ["network", "tx_hash"],
+                      "properties": {
+                        "network": {
+                          "type": "string",
+                          "description": "Numeric EVM chain id.",
+                          "enum": ["1", "8453", "84532"]
+                        },
+                        "tx_hash": {
+                          "type": "string",
+                          "description": "0x-prefixed 32-byte transaction hash.",
+                          "pattern": "^0x[a-fA-F0-9]{64}$"
+                        }
+                      }
+                    }
+                  }
+                },
+                "output": {
+                  "type": "object",
+                  "properties": {
+                    "example": {
+                      "type": "object",
+                      "properties": {
+                        "schema_version": { "type": "string" },
+                        "tx_hash": { "type": "string" },
+                        "data": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-schema": {
+          "input": {
+            "type": "object",
+            "required": ["network", "tx_hash"],
+            "properties": {
+              "network": { "type": "string", "enum": ["1", "8453", "84532"] },
+              "tx_hash": { "type": "string", "pattern": "^0x[a-fA-F0-9]{64}$" }
+            }
+          },
+          "output": {
+            "type": "object",
+            "properties": {
+              "schema_version": { "type": "string" },
+              "tx_hash": { "type": "string" },
+              "data": { "type": "object" }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "network",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["1", "8453", "84532"]
+            }
+          },
+          {
+            "name": "tx_hash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^0x[a-fA-F0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decoded semantic transaction summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FetchedTxData" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input (network or tx hash)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "examples": {
+                    "invalidNetwork": { "value": "Invalid network" },
+                    "invalidTxHash": { "value": "Invalid tx hash" }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/X402PaymentRequiredV2" },
+                "examples": {
+                  "baseUsdc": {
+                    "value": {
+                      "resource": {
+                        "url": "https://api.dappdojo.com/summary/8453/0x47807d99d1748731e70eaf66da01ac822b845c179053cb652b0f08ba444b24a1",
+                        "description": "Semantic transaction decode result",
+                        "mimeType": "application/json"
+                      },
+                      "accepts": [
+                        {
+                          "scheme": "exact",
+                          "network": "eip155:8453",
+                          "amount": "1000",
+                          "payTo": "0x03ae0E3557A3e708aBEFAF0a8248D0e09CaA57E3",
+                          "maxTimeoutSeconds": 300,
+                          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                          "extra": {
+                            "assetTransferMethod": "eip3009",
+                            "name": "USD Coin",
+                            "version": "2"
+                          }
+                        }
+                      ],
+                      "error": "Verification failed: address_not_registered",
+                      "x402Version": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string", "example": "Transaction not found" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "text/plain": { "schema": { "type": "string" } }
             }
           }
         }

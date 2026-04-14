@@ -1,4 +1,4 @@
-use axum::{Router, routing::{get, post}};
+use axum::{Router, routing::get};
 
 use crate::controllers::handlers::{
     favicon_get, favicon_head, fetcher, fetcher_body, openapi_json, openapi_yaml, x402_well_known,
@@ -6,8 +6,8 @@ use crate::controllers::handlers::{
 
 pub fn tx_routes() -> Router {
     Router::new()
-        .route("/summary", post(fetcher_body))
-        .route("/summary/{network}/{tx_hash}", post(fetcher))
+        .route("/summary", get(fetcher_body))
+        .route("/summary/{network}/{tx_hash}", get(fetcher))
 }
 
 pub fn openapi_routes() -> Router {

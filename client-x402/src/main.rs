@@ -37,22 +37,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdff".into());
 
     let hostname = var("SERVER_HOST").expect("Set SERVER_HOST");
-    let url = format!("https://{hostname}/summary");
+    // network / tx_hash are hex-safe for query strings (no spaces).
+    let url = format!(
+        "https://{hostname}/summary?network={network}&tx_hash={transaction_hash}"
+    );
 
     println!("URL: {}", url);
 
-    let request_body = json!({
-        "network": network,
-        "tx_hash": transaction_hash
-    })
-    .to_string();
-
-    let response = http_client
-        .post(&url)
-        .header("Content-Type", "application/json")
-        .body(request_body)
-        .send()
-        .await?;
+    let response = http_client.get(&url).send().await?;
 
     println!("Response: {:?}", response);
 

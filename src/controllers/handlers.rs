@@ -4,7 +4,7 @@ use crate::services::tx_fetcher::tx_fetcher;
 use crate::utils::{blockchain::get_chain_info, tools::get_rpc_url};
 use axum::Json;
 use axum::body::Body;
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::response::{IntoResponse, Response};
 use http::{StatusCode, header};
 use serde::Deserialize;
@@ -22,7 +22,7 @@ pub struct SummaryRequest {
     pub tx_hash: String,
 }
 
-pub async fn fetcher_body(Json(req): Json<SummaryRequest>) -> Result<impl IntoResponse, ApiError> {
+pub async fn fetcher_body(Query(req): Query<SummaryRequest>) -> Result<impl IntoResponse, ApiError> {
     fetch_summary(req.network, req.tx_hash).await
 }
 
@@ -86,7 +86,10 @@ pub async fn openapi_yaml() -> impl IntoResponse {
 pub async fn x402_well_known() -> impl IntoResponse {
     Json(json!({
         "version": 1,
-        "resources": ["POST /summary"]
+        "resources": [
+            "GET /summary",
+            "GET /summary/{network}/{tx_hash}"
+        ]
     }))
 }
 

@@ -61,5 +61,5 @@
     "transaction_index": 125,
     "tx_hash": "0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f"
   },
-  "url": "https://valery-hemoid-lyman.ngrok-free.dev/summary"
+  "url": "https://valery-hemoid-lyman.ngrok-free.dev/summary?network=8453&tx_hash=0x84fdb2d79c552eea98f01d905ac775d78f7c135ddd1c9b8a6bb76b701797cd8f"
 }
